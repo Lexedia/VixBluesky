@@ -29,7 +29,8 @@ export const getPost: Handler<
   Env,
   '/profile/:user/post/:post' | '/https://bsky.app/profile/:user/post/:post'
 > = async (c) => {
-  const { user, post } = c.req.param();
+  let { user, post } = c.req.param();
+  post = post.replaceAll('|', '');
   const isDirect = c.req.query('direct');
 
   const agent = c.get('Agent');
