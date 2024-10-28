@@ -7,7 +7,8 @@ export const getProfile: Handler<
   Env,
   '/profile/:user' | '/https://bsky.app/profile/:user'
 > = async (c) => {
-  const { user } = c.req.param();
+  let { user } = c.req.param();
+  user = user.replaceAll('|', '');
   const agent = c.get('Agent');
   try {
     var { data } = await fetchProfile(agent, { user });
