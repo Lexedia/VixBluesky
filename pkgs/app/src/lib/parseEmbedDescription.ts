@@ -8,11 +8,11 @@ export function parseEmbedDescription(post: AppBskyFeedDefs.PostView): string {
       checkType('app.bsky.embed.recordWithMedia#view', post.embed));
 
   let embed;
-  if(isQuote){
+  if (isQuote) {
     // @ts-expect-error
     embed = post.embed.record?.record ?? post.embed.record;
   }
-  
+
   return isQuote
     ? // @ts-expect-error
       `${post.record.text}\n\nQuoting @${embed.author.handle}\n➥${indent(embed.value.text, 2)}`
