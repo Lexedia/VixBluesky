@@ -23,3 +23,6 @@ export const indent = (s: string, n: number) =>
 export function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
 }
+
+export const ellipsis = (s: string, n: number) =>
+  s.length > n ? `${s.slice(0, n - 3)}...` : s;

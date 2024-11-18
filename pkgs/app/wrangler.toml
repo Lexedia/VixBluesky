@@ -14,3 +14,6 @@ VIXBLUESKY_API_URL="https://api.bskyx.app/"
 binding = "bskyx"
 id = "ee913536e1fb47dcb9fa6275725f5a6f"
 preview_id = "5e180765d24346c9b238be57d9c7001f"
+
+[observability]
+enabled = true

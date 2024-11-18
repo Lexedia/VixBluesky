@@ -1,4 +1,5 @@
 import { Handler } from 'hono';
+import { ellipsis } from '../lib/utils';
 
 export enum OEmbedTypes {
   Post = 1,
@@ -40,12 +41,14 @@ export const getOEmbed: Handler<Env, '/oembed'> = async (c) => {
 
   if (type === OEmbedTypes.Video) {
     const { replies, reposts, likes, description } = c.req.query();
+    const subStrDesc = ellipsis(description, 256);
+
     return c.json({
       ...defaults,
       provider_name: `VixBluesky\n\n🗨️ ${replies}    ♻️ ${reposts}    💙 ${likes}`,
       description,
       title: description,
-      author_name: description,
+      author_name: subStrDesc,
     });
   }
 
