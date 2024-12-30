@@ -13,7 +13,7 @@ export const getOEmbed: Handler<Env, '/oembed'> = async (c) => {
 
   const defaults = {
     provider_name: 'VixBluesky',
-    provider_url: 'https://bskyx.app/',
+    provider_url: 'https://bskx.app/',
     thumbnail_width: 1000,
     thumbnail_height: 1000,
   };

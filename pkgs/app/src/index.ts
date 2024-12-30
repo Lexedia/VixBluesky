@@ -7,6 +7,7 @@ import { getOEmbed } from './routes/getOEmbed';
 import { getProfileData } from './routes/getProfileData';
 import { getProfile } from './routes/getProfile';
 import { HTTPException } from 'hono/http-exception';
+import { name, version } from '../package.json';
 
 const app = new Hono<Env>();
 
@@ -14,18 +15,18 @@ app.use('*', async (c, next) => {
   const creds = new CredentialManager({
     service: c.env.BSKY_SERVICE_URL,
     onRefresh(session) {
-      return c.env.bskyx.put('session', JSON.stringify(session));
+      return c.env.sessions.put('session', JSON.stringify(session));
     },
     onExpired(session) {
-      return c.env.bskyx.delete('session');
+      return c.env.sessions.delete('session');
     },
     onSessionUpdate(session) {
-      return c.env.bskyx.put('session', JSON.stringify(session));
+      return c.env.sessions.put('session', JSON.stringify(session));
     },
   });
   const agent = new XRPC({ handler: creds });
   try {
-    const rawSession = await c.env.bskyx.get('session');
+    const rawSession = await c.env.sessions.get('session');
     if (rawSession) {
       const session = JSON.parse(rawSession) as AtpSessionData;
       await creds.resume(session);
@@ -48,6 +49,7 @@ app.use('*', async (c, next) => {
 });
 
 app.get('/', (c) => c.redirect('https://github.com/Lexedia/VixBluesky'));
+app.get('/json', (c) => c.json({ name, version, repoUrl: 'https://github.com/Lexedia/VixBluesky' }));
 
 app.get('/profile/:user/post/:post', getPost);
 app.get('/https://bsky.app/profile/:user/post/:post', getPost);
