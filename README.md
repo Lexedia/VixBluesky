@@ -19,7 +19,7 @@ You want to link to a media directly? You can prepend `r.` to the URL to get a d
 You can append `/json` at the end of each url to get the raw data VixBluesky receives.
 
 > [!WARNING]
-> __When querying the VixBluesky API, please DO use a descriptive User-Agent. This is used to your traffic and avoid abuse.__
+> __When querying the VixBluesky API, please DO use a descriptive User-Agent. This is used to your identify traffic and avoid abuse.__
 > 
 > A descriptive User-Agent should include at least: the name of the application, the version of the application (if applicable), and optionally a link to a website. 
 > Generally, it should somewhat looks like this `YourApp (v1.7.10, https://repo.git (or any identifiable URL))`.
