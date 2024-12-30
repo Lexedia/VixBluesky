@@ -1,14 +1,17 @@
 # VixBluesky 🛠️ (Inspired by [FixTweet](https://github.com/FixTweet/FixTweet))
 
+Embed Bluesky links in Discord.
+
+## Fix embeds with `s/y/x`.
+
 > [!IMPORTANT]
 > This is a fork of [FixBluesky](https://github.com/ThornbushHQ/FixBluesky) by [@ItsRauf](https://www.github.com/ItsRauf).
 > All credits go to them for the original idea and implementation.
 
-Embed Bluesky links in Discord.
 
 ## How To Use?
 
-#### Simply append `x` at the end of `bsky.app`.
+#### Simply replace `y` with x in `bsky.app`. (`bsky.app` -> `bskx.app`)
 
 ## Direct Links
 

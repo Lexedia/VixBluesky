@@ -3,15 +3,18 @@ main = "src/index.ts"
 compatibility_date = "2023-01-01"
 
 workers_dev = false
-route = { pattern = "bskyx.app/*", zone_name = "bskyx.app" }
+routes = [
+    { pattern = "bskyx.app/*", zone_name = "bskyx.app" },
+    { pattern = "bskx.app/*", zone_name = "bskx.app" },
+]
 
 [vars]
-BSKY_SERVICE_URL="https://bsky.social/"
-VIXBLUESKY_APP_DOMAIN="bskyx.app"
-VIXBLUESKY_API_URL="https://api.bskyx.app/"
+BSKY_SERVICE_URL = "https://bsky.social/"
+VIXBLUESKY_APP_DOMAIN = "bskx.app"
+VIXBLUESKY_API_URL = "https://api.bskx.app/"
 
 [[kv_namespaces]]
-binding = "bskyx"
+binding = "sessions"
 id = "ee913536e1fb47dcb9fa6275725f5a6f"
 preview_id = "5e180765d24346c9b238be57d9c7001f"
 
