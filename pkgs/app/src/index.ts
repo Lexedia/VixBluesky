@@ -47,9 +47,7 @@ app.use('*', async (c, next) => {
   return next();
 });
 
-app.get('/', async (c) => {
-  return c.redirect('https://github.com/Rapougnac/VixBluesky');
-});
+app.get('/', (c) => c.redirect('https://github.com/Lexedia/VixBluesky'));
 
 app.get('/profile/:user/post/:post', getPost);
 app.get('/https://bsky.app/profile/:user/post/:post', getPost);
