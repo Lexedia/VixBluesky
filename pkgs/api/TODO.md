@@ -1,0 +1,2 @@
+- Fix video
+- Dockerize

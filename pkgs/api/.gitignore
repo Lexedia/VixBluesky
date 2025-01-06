@@ -1,0 +1,24 @@
+# Compiled files
+target/
+**/*.rs.bk
+
+# Dependency directory
+.cargo/
+
+Cargo.lock
+
+# Rustup directory
+.rustup/
+
+target/
+
+# Environment variables
+.env
+
+# IDE - RustRover
+.idea/
+.vscode/
+.devcontainer/
+
+# macOS specific
+.DS_Store
