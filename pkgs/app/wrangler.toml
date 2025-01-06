@@ -18,7 +18,7 @@ routes = [
 [vars]
 BSKY_SERVICE_URL = "https://bsky.social/"
 VIXBLUESKY_APP_DOMAIN = "bskx.app"
-VIXBLUESKY_API_URL = "https://xjl686rp-3000.uks1.devtunnels.ms/"
+VIXBLUESKY_API_URL = "https://api.bskx.app/"
 
 [[kv_namespaces]]
 binding = "sessions"
