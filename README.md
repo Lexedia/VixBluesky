@@ -18,6 +18,9 @@ Embed Bluesky links in Discord.
 You want to link to a media directly? You can prepend `r.` to the URL to get a direct link.
 ![Direct Link](./.github/README/raw-media.png)
 
+### Other features
+You can see the wiki [here](https://github.com/Lexedia/VixBluesky/wiki/Features)
+
 ## For developers
 You can append `/json` at the end of each url to get the raw data VixBluesky receives.
 
