@@ -6,12 +6,19 @@ workers_dev = false
 routes = [
     { pattern = "bskyx.app/*", zone_name = "bskyx.app" },
     { pattern = "bskx.app/*", zone_name = "bskx.app" },
+    { pattern = "r.bskx.app/", zone_name = "bskx.app" },
+    { pattern = "g.r.bskx.app/", zone_name = "bskx.app" },
+    { pattern = "r.g.bskx.app/", zone_name = "bskx.app" },
+    { pattern = "g.bskx.app/", zone_name = "bskx.app" },
+    { pattern = "v.bskx.app/", zone_name = "bskx.app" },
+    { pattern = "r.v.bskx.app/", zone_name = "bskx.app" },
+    { pattern = "v.r.bskx.app/", zone_name = "bskx.app" },
 ]
 
 [vars]
 BSKY_SERVICE_URL = "https://bsky.social/"
 VIXBLUESKY_APP_DOMAIN = "bskx.app"
-VIXBLUESKY_API_URL = "https://api.bskx.app/"
+VIXBLUESKY_API_URL = "https://xjl686rp-3000.uks1.devtunnels.ms/"
 
 [[kv_namespaces]]
 binding = "sessions"
