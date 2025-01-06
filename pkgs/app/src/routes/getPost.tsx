@@ -57,7 +57,15 @@ export const getPost: Handler<
   const imgs = isGalleryView
     ? typeof images === 'string'
       ? images
-      : `${c.env.VIXBLUESKY_API_URL}images/png/${images.map((img) => img.fullsize.split('/').slice(-2).join('/').replaceAll('@jpeg', '')).join('/')}`
+      : `${c.env.VIXBLUESKY_API_URL}images/png/${images
+          .map((img, i) =>
+            img.fullsize
+              .split('/')
+              .slice(i === 0 ? -2 : -1)
+              .join('/')
+              .replaceAll('@jpeg', ''),
+          )
+          .join('/')}`
     : images;
 
   let videoMetaData: VideoInfo | undefined;
