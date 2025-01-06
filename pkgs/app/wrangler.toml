@@ -6,13 +6,13 @@ workers_dev = false
 routes = [
     { pattern = "bskyx.app/*", zone_name = "bskyx.app" },
     { pattern = "bskx.app/*", zone_name = "bskx.app" },
-    { pattern = "r.bskx.app/", zone_name = "bskx.app" },
-    { pattern = "g.r.bskx.app/", zone_name = "bskx.app" },
-    { pattern = "r.g.bskx.app/", zone_name = "bskx.app" },
-    { pattern = "g.bskx.app/", zone_name = "bskx.app" },
-    { pattern = "v.bskx.app/", zone_name = "bskx.app" },
-    { pattern = "r.v.bskx.app/", zone_name = "bskx.app" },
-    { pattern = "v.r.bskx.app/", zone_name = "bskx.app" },
+    { pattern = "r.bskx.app/*", zone_name = "bskx.app" },
+    { pattern = "g.r.bskx.app/*", zone_name = "bskx.app" },
+    { pattern = "r.g.bskx.app/*", zone_name = "bskx.app" },
+    { pattern = "g.bskx.app/*", zone_name = "bskx.app" },
+    { pattern = "v.bskx.app/*", zone_name = "bskx.app" },
+    { pattern = "r.v.bskx.app/*", zone_name = "bskx.app" },
+    { pattern = "v.r.bskx.app/*", zone_name = "bskx.app" },
 ]
 
 [vars]
