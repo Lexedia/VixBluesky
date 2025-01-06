@@ -1,16 +1,12 @@
-use std::{
-    io::Cursor,
-    sync::{Arc, Mutex},
-};
+use std::io::Cursor;
 
-use ffmpeg_next::{frame, software, util, media, format, codec, };
 use image::{
     imageops, imageops::FilterType, DynamicImage, GenericImageView, ImageError, ImageOutputFormat,
     RgbImage,
 };
 use rayon::prelude::*;
 use thiserror::Error;
-use tokio::task;
+use tokio::{io::AsyncRead, process::Command};
 use tracing::{debug, error};
 
 #[derive(Debug, Error)]
@@ -28,7 +24,6 @@ pub enum ProcessingError {
     #[error("Failed to blur image, final image buffer could not be allocated")]
     BlurBufferError,
 }
-
 
 pub struct CombinedThumbnail {
     inner: Vec<u8>,
@@ -143,7 +138,6 @@ fn combine_images(
         3 => {
             layout_horizontal(&mut new_image, &scaled_images[..2], 0);
 
-
             let processed_last_img = scale_all_images_to_same_size(
                 &[images[2].to_owned()],
                 total_width,
@@ -209,64 +203,44 @@ pub fn generate_combined_thumbnail(
     Ok(thumbnail)
 }
 
-pub async fn buffer_video(master_url: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+pub async fn buffer_video(
+    master_url: &str,
+) -> Result<impl AsyncRead + Unpin, Box<dyn std::error::Error>> {
     let start = std::time::Instant::now();
 
-    let buffer = Arc::new(Mutex::new(Vec::new()));
-    let buffer_clone = Arc::clone(&buffer);
+    let args = [
+        "-loglevel",
+        "quiet",
+        "-i",
+        &master_url,
+        "-c:v",
+        "copy",
+        "-preset",
+        "ultrafast",
+        "-threads",
+        "0",
+        "-c:a",
+        "aac",
+        "-bsf:a",
+        "aac_adtstoasc",
+        "-movflags",
+        "faststart+frag_keyframe+empty_moov",
+        "-f",
+        "mp4",
+        "pipe:1",
+    ];
 
-    let handle = task::spawn(async move {
-        let mut ictx = format::input(&master_url).unwrap();
-        let input = ictx.streams().best(media::Type::Video).unwrap();
-        let video_stream_index = input.index();
+    debug!("Spawning `ffmpeg {}`", args.join(" "));
 
-        let mut decoder = codec::context::Context::from_parameters(input.parameters())
-            .unwrap()
-            .decoder()
-            .video()
-            .unwrap();
-        let mut scaler = software::scaling::Context::get(
-            decoder.format(),
-            decoder.width(),
-            decoder.height(),
-            util::format::Pixel::RGB24,
-            decoder.width(),
-            decoder.height(),
-            software::scaling::Flags::FAST_BILINEAR,
-        )
-        .unwrap();
+    let mut process = Command::new("ffmpeg")
+        .args(&args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()?;
 
-        let mut frame = frame::Video::empty();
-        let mut rgb_frame = frame::Video::empty();
+    let stdout = process.stdout.take().ok_or("Failed to capture stdout")?;
 
-        for (stream, packet) in ictx.packets() {
-            if stream.index() == video_stream_index {
-                decoder.send_packet(&packet).unwrap();
-                while decoder.receive_frame(&mut frame).is_ok() {
-                    scaler.run(&frame, &mut rgb_frame).unwrap();
-                    let mut buffer = buffer_clone.lock().unwrap();
-                    buffer.extend_from_slice(rgb_frame.data(0));
-                }
-            }
-        }
+    debug!("Spawned `ffmpeg` process in {:?}", start.elapsed());
 
-        decoder.send_eof().unwrap();
-        while decoder.receive_frame(&mut frame).is_ok() {
-            scaler.run(&frame, &mut rgb_frame).unwrap();
-            let mut buffer = buffer_clone.lock().unwrap();
-            buffer.extend_from_slice(rgb_frame.data(0));
-        }
-    });
-
-    tokio::select! {
-        _ = handle => {},
-    }
-
-    let buffer = Arc::try_unwrap(buffer).unwrap().into_inner().unwrap();
-
-    let duration = start.elapsed();
-
-    debug!("Buffered video in {:?}", duration);
-
-    Ok(buffer)
+    Ok(stdout)
 }
