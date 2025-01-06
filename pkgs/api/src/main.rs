@@ -6,6 +6,7 @@ use axum::{
     response::{IntoResponse, Redirect},
     routing::get,
     serve, Extension, Router,
+    body::Body,
 };
 use axum_thiserror::ErrorStatus;
 use image::DynamicImage;
@@ -23,8 +24,9 @@ use std::{
 };
 use thiserror::Error;
 use tokio::net::TcpListener;
+use tokio_util::io::ReaderStream;
 use tracing::{debug, error, info, trace, Level};
-use ffmpeg_next as ffmpeg;
+use tower_http;
 
 #[derive(Clone)]
 struct AppState {
@@ -75,7 +77,7 @@ async fn main() {
     }
 
     tracing_subscriber::fmt()
-        .with_max_level(Level::DEBUG)
+        .with_max_level(Level::INFO)
         .init();
 
     let client = reqwest::ClientBuilder::new()
@@ -83,13 +85,11 @@ async fn main() {
         .build()
         .unwrap();
 
-    ffmpeg::init().unwrap();
-
     let app = Router::new()
         .route("/", get(index_redirect))
         .route("/images/:render_type/:did/*image_ids", get(handle_image))
         .route("/video/:quality/:did/:video_id", get(handle_video))
-        // .layer(tower_http::trace::TraceLayer::new_for_http())
+        .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(Extension(client.clone()))
         .with_state(AppState {
             http_client: client,
@@ -100,7 +100,7 @@ async fn main() {
         .parse::<u16>()
         .expect("PORT must be a number");
 
-    let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], port)))
+    let listener = TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], port)))
         .await
         .unwrap();
 
@@ -290,19 +290,18 @@ async fn handle_video(path: Path<VideoPath>) -> Result<impl IntoResponse, BskxVi
 
     let start = Instant::now();
 
-    let video_data = match processing::buffer_video(url).await {
-        Ok(data) => data,
+    let stdout = match processing::buffer_video(&url).await {
+        Ok(stdout) => stdout,
         Err(e) => {
             error!("Failed to buffer video: {}", e);
             return Err(BskxVideoError::VideoBufferError(e));
         }
     };
 
-    debug!(
-        bytes = video_data.len(),
-        "Fetched video in {:?}",
-        start.elapsed()
-    );
+    let stream = ReaderStream::new(stdout);
+    let body = Body::from_stream(stream);
+
+    debug!("Started streaming video in {:?}", start.elapsed());
 
     Ok((
         [
@@ -310,6 +309,6 @@ async fn handle_video(path: Path<VideoPath>) -> Result<impl IntoResponse, BskxVi
             (axum::http::header::CACHE_CONTROL, "public, max-age=604800"),
             (axum::http::header::CONNECTION, "keep-alive"),
         ],
-        video_data,
+        body,
     ))
 }
