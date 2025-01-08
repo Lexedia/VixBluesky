@@ -2,9 +2,13 @@
 
 Embed Bluesky links in Discord.
 
+> [!IMPORTANT]
+> If you are still using the old domain (`bskyx.app`) you should consider switching to `bskx.app` since `bskyx.app` only supports Raw Media access.
+> I do not plan to backports other features to this domain.
+
 ## Fix embeds with `s/y/x`.
 
-> [!IMPORTANT]
+> [!NOTE]
 > This is a fork of [FixBluesky](https://github.com/ThornbushHQ/FixBluesky) by [@ItsRauf](https://www.github.com/ItsRauf).
 > All credits go to them for the original idea and implementation.
 
