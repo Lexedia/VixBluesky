@@ -25,11 +25,14 @@ export function parseEmbedImages(
         ];
       }
 
+      let e;
+
       if (
         embed.record.embeds &&
-        checkType('app.bsky.embed.external#view', embed.record.embeds[0])
+        checkType('app.bsky.embed.external#view', (e = embed.record.embeds[0])) &&
+        (e.external.title || e.external.description) 
       ) {
-        return embed.record.embeds[0].external.uri;
+        return e.external.uri;
       }
     }
   }
@@ -48,7 +51,7 @@ export function parseEmbedImages(
   const hasEmptyImages = images.length === 0;
 
   if (hasEmptyImages) {
-    if (checkType('app.bsky.embed.external#view', embed)) {
+    if (checkType('app.bsky.embed.external#view', embed) && (embed.external.title || embed.external.description)) {
       return embed.external.uri;
     }
   }

@@ -51,11 +51,11 @@ app.use('*', async (c, next) => {
 app.get('/', (c) => c.redirect('https://github.com/Lexedia/VixBluesky'));
 app.get('/json', (c) => c.json({ name, version, repoUrl: 'https://github.com/Lexedia/VixBluesky' }));
 
-app.get('/profile/:user/post/:post/:index?', getPost);
-app.get('/https://bsky.app/profile/:user/post/:post/:index?', getPost);
-
 app.get('/profile/:user/post/:post/json', getPostData);
 app.get('/https://bsky.app/profile/:user/post/:post/json', getPostData);
+
+app.get('/profile/:user/post/:post/:index?', getPost);
+app.get('/https://bsky.app/profile/:user/post/:post/:index?', getPost);
 
 app.get('/profile/:user', getProfile);
 app.get('/https://bsky.app/profile/:user', getProfile);
