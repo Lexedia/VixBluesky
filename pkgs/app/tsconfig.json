@@ -6,7 +6,7 @@
     "esModuleInterop": true,
     "strict": true,
     "lib": ["esnext"],
-    "types": ["@cloudflare/workers-types"],
+    "types": ["@cloudflare/workers-types", "@atcute/bluesky/lexicons"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   }

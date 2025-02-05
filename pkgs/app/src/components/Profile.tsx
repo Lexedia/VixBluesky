@@ -1,6 +1,6 @@
-import { Layout } from './Layout';
-import { OEmbedTypes } from '../routes/getOEmbed';
-import { AppBskyActorDefs } from '@atcute/client/lexicons';
+import { Layout } from './Layout'
+import { OEmbedTypes } from '../routes/getOEmbed'
+import { AppBskyActorDefs } from '@atcute/client/lexicons'
 
 interface ProfileProps {
   profile: AppBskyActorDefs.ProfileViewDetailed;
@@ -29,4 +29,4 @@ export const Profile = ({ profile, url, appDomain }: ProfileProps) => (
       )}`}
     />
   </Layout>
-);
+)

@@ -1,5 +1,5 @@
-import { XRPC } from '@atcute/client';
-import type { KVNamespace } from '@cloudflare/workers-types';
+import { XRPC } from '@atcute/client'
+import type { KVNamespace } from '@cloudflare/workers-types'
 
 declare global {
   interface Env {

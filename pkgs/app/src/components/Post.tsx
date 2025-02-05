@@ -1,9 +1,9 @@
-import { Layout } from './Layout';
-import { OEmbedTypes } from '../routes/getOEmbed';
-import { parseEmbedDescription } from '../lib/parseEmbedDescription';
-import { checkType } from '../lib/utils';
-import { VideoInfo } from '../routes/getPost';
-import { AppBskyEmbedImages, AppBskyFeedDefs } from '@atcute/client/lexicons';
+import { Layout } from './Layout'
+import { OEmbedTypes } from '../routes/getOEmbed'
+import { parseEmbedDescription } from '../lib/parseEmbedDescription'
+import { is } from '../lib/utils'
+import { VideoInfo } from '../routes/getPost'
+import { AppBskyEmbedImages, AppBskyFeedDefs } from '@atcute/client/lexicons'
 
 interface PostProps {
   post: AppBskyFeedDefs.PostView;
@@ -14,15 +14,15 @@ interface PostProps {
   images: string | AppBskyEmbedImages.ViewImage[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Meta = ({ post }: { post: AppBskyFeedDefs.PostView }) => (
   <>
     <meta name="twitter:card" content="summary_large_image" />
   </>
-);
+)
 
 const Video = ({
   streamInfo,
-  apiUrl,
   appDomain,
   post,
   description,
@@ -33,7 +33,7 @@ const Video = ({
   post: AppBskyFeedDefs.PostView;
   description: string;
 }) => {
-  const url = streamInfo.url.toString();
+  const url = streamInfo.url.toString()
 
   return (
     <>
@@ -73,8 +73,8 @@ const Video = ({
         )}&description=${encodeURIComponent(description)}`}
       />
     </>
-  );
-};
+  )
+}
 
 const Images = ({
   images,
@@ -96,7 +96,7 @@ const Images = ({
       ))
     )}
   </>
-);
+)
 
 export const Post = ({
   post,
@@ -106,15 +106,9 @@ export const Post = ({
   apiUrl,
   images,
 }: PostProps) => {
-  const isAuthor = images === post.author.avatar;
-  let description = parseEmbedDescription(post);
-  const isVideo = checkType(
-    'app.bsky.embed.video',
-    // @ts-expect-error
-    post.embed?.media ?? post.embed,
-  );
-
-  let videoUrl;
+  const isAuthor = images === post.author.avatar
+  const description = parseEmbedDescription(post)
+  const isVideo = is('app.bsky.embed.video#view', post.embed)
 
   return (
     <Layout url={url}>
@@ -159,5 +153,5 @@ export const Post = ({
         />
       )}
     </Layout>
-  );
-};
+  )
+}

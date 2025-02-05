@@ -1,15 +1,15 @@
-import { html } from 'hono/html';
+import { html } from 'hono/html'
 
 export interface LayoutProps {
   url: string;
-  children: any;
+  children: unknown;
 }
 
 export const Layout = ({ url, children }: LayoutProps) => {
-  const removeLeadingSlash = url.substring(1);
+  const removeLeadingSlash = url.substring(1)
   const redirectUrl = removeLeadingSlash.startsWith('https://')
     ? removeLeadingSlash
-    : `https://bsky.app/${removeLeadingSlash}`;
+    : `https://bsky.app/${removeLeadingSlash}`
   return html`
     <!doctype html>
     <html>
@@ -23,5 +23,5 @@ export const Layout = ({ url, children }: LayoutProps) => {
         <meta http-equiv="refresh" content="0;url=${redirectUrl}" />
       </head>
     </html>
-  `;
-};
+  `
+}
