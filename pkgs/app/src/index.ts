@@ -30,7 +30,6 @@ app.use('*', async (c, next) => {
       const session = JSON.parse(rawSession) as AtpSessionData
       await creds.resume(session)
     } else {
-      console.log(c.env.BSKY_AUTH_USERNAME, c.env.BSKY_AUTH_PASSWORD)
       await creds.login({
         identifier: c.env.BSKY_AUTH_USERNAME,
         password: c.env.BSKY_AUTH_PASSWORD,
