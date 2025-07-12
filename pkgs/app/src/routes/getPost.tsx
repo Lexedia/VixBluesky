@@ -19,9 +19,8 @@ export const getPost: Handler<
   | '/https://bsky.app/profile/:user/post/:post/:index?'
 > = async (c) => {
   // eslint-disable-next-line prefer-const
-  let { user, post, index = '0' } = c.req.param()
+  let { user, post, index } = c.req.param()
   post = post.replaceAll('|', '')
-  const idx = Number.isNaN(+index) ? 0 : +index
   const isDirect = c.req.query('direct') === 'true'
   const isGalleryView = c.req.query('gallery') === 'true'
   const useVideoApi = c.req.query('video_api') === 'true'
@@ -84,6 +83,7 @@ export const getPost: Handler<
         videoMetadata={videoMetaData}
         apiUrl={c.env.VIXBLUESKY_API_URL}
         images={imgs}
+        index={index ? +index : undefined}
       />,
     )
   }
@@ -94,6 +94,7 @@ export const getPost: Handler<
   }
 
   if (Array.isArray(imgs) && imgs.length !== 0) {
+    const idx = Number.isNaN(+index!) ? 0 : +index!
     const url = imgs[idx].fullsize
     return c.redirect(url)
   }

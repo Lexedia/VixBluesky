@@ -1,5 +1,5 @@
-import { Brand, Records } from '@atcute/client/lexicons'
-import '@atcute/bluesky/lexicons'
+import { $type } from '@atcute/lexicons'
+import { Records } from '@atcute/lexicons/ambient'
 
 export const concatQueryParams = (params: Record<string, string | string[]>) =>
   Object.entries(params)
@@ -15,7 +15,7 @@ export const join = (t: string | string[], s: string) =>
   Array.isArray(t) ? t.join(s) : t
 
 export function is<
-  T extends Brand.Union<U>,
+  T extends $type.enforce<U>,
   const Type extends T['$type'],
   U extends object,
 >(lexicon: Type, obj: T): obj is T & { $type: Type }

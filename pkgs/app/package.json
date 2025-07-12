@@ -7,18 +7,20 @@
     "deploy": "wrangler deploy --minify src/index.ts"
   },
   "dependencies": {
-    "@atcute/bluesky": "^1.0.7",
-    "@atcute/client": "^2.0.3",
-    "hono": "^4.5.1"
+    "@atcute/atproto": "^3.1.0",
+    "@atcute/bluesky": "^3.1.4",
+    "@atcute/client": "^4.0.3",
+    "@atcute/lexicons": "^1.1.0",
+    "hono": "^4.8.4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20230628.0",
-    "@eslint/js": "^9.19.0",
-    "@stylistic/eslint-plugin": "^3.0.1",
-    "eslint": "^9.19.0",
-    "prettier": "^3.3.3",
-    "typescript": "^5.1.6",
-    "typescript-eslint": "^8.23.0",
-    "wrangler": "^3.99.0"
+    "@cloudflare/workers-types": "^4.20250712.0",
+    "@eslint/js": "^9.31.0",
+    "@stylistic/eslint-plugin": "^5.1.0",
+    "eslint": "^9.31.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.36.0",
+    "wrangler": "^4.24.3"
   }
 }

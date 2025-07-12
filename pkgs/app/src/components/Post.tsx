@@ -3,7 +3,7 @@ import { OEmbedTypes } from '../routes/getOEmbed'
 import { parseEmbedDescription } from '../lib/parseEmbedDescription'
 import { is } from '../lib/utils'
 import { VideoInfo } from '../routes/getPost'
-import { AppBskyEmbedImages, AppBskyFeedDefs } from '@atcute/client/lexicons'
+import { AppBskyEmbedImages, AppBskyFeedDefs } from '@atcute/bluesky'
 
 interface PostProps {
   post: AppBskyFeedDefs.PostView;
@@ -12,6 +12,7 @@ interface PostProps {
   videoMetadata?: VideoInfo;
   apiUrl: string;
   images: string | AppBskyEmbedImages.ViewImage[];
+  index?: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -78,23 +79,29 @@ const Video = ({
 
 const Images = ({
   images,
+  index,
 }: {
   images: AppBskyEmbedImages.ViewImage[] | string;
+  index?: number;
 }) => (
   <>
-    {typeof images === 'string' ? (
+    {typeof images === 'string' ?
       <>
         <meta property="og:image" content={images} />
         <meta property="twitter:image" content={images} />
       </>
-    ) : (
-      images.map((img, i) => (
+      : index !== undefined ?
         <>
-          <meta property="og:image" content={img.fullsize} />(
-          {i === 0 && <meta property="twitter:image" content={img.fullsize} />})
-        </>
-      ))
-    )}
+          <meta property="og:image" content={images[index].fullsize} />
+          <meta property="twitter:image" content={images[index].fullsize} />
+        </> :
+        images.map((img, i) => (
+          <>
+            <meta property="og:image" content={img.fullsize} />
+            {i === 0 && <meta property="twitter:image" content={img.fullsize} />}
+          </>
+        ))
+    }
   </>
 )
 
@@ -105,6 +112,7 @@ export const Post = ({
   videoMetadata,
   apiUrl,
   images,
+  index,
 }: PostProps) => {
   const isAuthor = images === post.author.avatar
   const description = parseEmbedDescription(post)
@@ -127,7 +135,7 @@ export const Post = ({
 
       {!isAuthor && <Meta post={post} />}
 
-      {images.length !== 0 && !isVideo && <Images images={images} />}
+      {images.length !== 0 && !isVideo && <Images index={index} images={images} />}
 
       {isVideo && (
         <Video
@@ -143,10 +151,8 @@ export const Post = ({
         <link
           rel="alternate"
           type="application/json+oembed"
-          href={`https:/${appDomain}/oembed?type=${OEmbedTypes.Post}&replies=${
-            post.replyCount
-          }&reposts=${post.repostCount}&likes=${
-            post.likeCount
+          href={`https:/${appDomain}/oembed?type=${OEmbedTypes.Post}&replies=${post.replyCount
+          }&reposts=${post.repostCount}&likes=${post.likeCount
           }&avatar=${encodeURIComponent(
             post.author.avatar ?? '',
           )}&description=${encodeURIComponent(description)}`}

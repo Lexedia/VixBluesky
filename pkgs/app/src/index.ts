@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
-import { XRPC, CredentialManager, AtpSessionData } from '@atcute/client'
-import '@atcute/bluesky/lexicons'
+import { Client, CredentialManager, AtpSessionData } from '@atcute/client'
 import { getPost } from './routes/getPost'
 import { getPostData } from './routes/getPostData'
 import { getOEmbed } from './routes/getOEmbed'
@@ -24,13 +23,14 @@ app.use('*', async (c, next) => {
       return c.env.sessions.put('session', JSON.stringify(session))
     },
   })
-  const agent = new XRPC({ handler: creds })
+  const agent = new Client({ handler: creds })
   try {
     const rawSession = await c.env.sessions.get('session')
     if (rawSession) {
       const session = JSON.parse(rawSession) as AtpSessionData
       await creds.resume(session)
     } else {
+      console.log(c.env.BSKY_AUTH_USERNAME, c.env.BSKY_AUTH_PASSWORD)
       await creds.login({
         identifier: c.env.BSKY_AUTH_USERNAME,
         password: c.env.BSKY_AUTH_PASSWORD,
