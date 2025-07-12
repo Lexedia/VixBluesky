@@ -10,6 +10,8 @@ export const getProfile: Handler<
   let { user } = c.req.param()
   user = user.replaceAll('|', '')
   const agent = c.get('Agent')
+  const isDirect = c.req.query('direct') === 'true'
+
   try {
     // eslint-disable-next-line no-var
     var { data } = await fetchProfile(agent, { user })
@@ -19,11 +21,15 @@ export const getProfile: Handler<
     })
   }
 
-  return c.html(
-    <Profile
-      profile={data}
-      url={c.req.path}
-      appDomain={c.env.VIXBLUESKY_APP_DOMAIN}
-    />,
-  )
+  if (!isDirect) {
+    return c.html(
+      <Profile
+        profile={data}
+        url={c.req.path}
+        appDomain={c.env.VIXBLUESKY_APP_DOMAIN}
+      />,
+    )
+  }
+
+  return c.redirect(data.avatar ?? '')
 }

@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { fetchPost } from '../lib/fetchPostData'
 import { Post } from '../components/Post'
 import { parseEmbedImages } from '../lib/parseEmbedImages'
-import { is } from '../lib/utils'
+import { is, Platform } from '../lib/utils'
 
 export interface VideoInfo {
   url: URL;
@@ -26,6 +26,9 @@ export const getPost: Handler<
   const isGalleryView = c.req.query('gallery') === 'true'
   const useVideoApi = c.req.query('video_api') === 'true'
 
+  console.log(c.req.header('User-Agent'))
+
+  const platform = /.+TelegramBot.+/.test(c.req.header('User-Agent')!) ? Platform.telegram : Platform.discord
   const agent = c.get('Agent')
   try {
     // eslint-disable-next-line no-var
@@ -78,6 +81,7 @@ export const getPost: Handler<
   if (!isDirect) {
     return c.html(
       <Post
+        platform={platform}
         post={fetchedPost}
         url={c.req.path}
         appDomain={c.env.VIXBLUESKY_APP_DOMAIN}
