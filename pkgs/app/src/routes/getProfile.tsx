@@ -3,6 +3,8 @@ import { HTTPException } from 'hono/http-exception'
 import { fetchProfile } from '../lib/fetchProfile'
 import { Profile } from '../components/Profile'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
+import { ClientResponseError } from '@atcute/client'
+import { NotFound } from '../components/NotFound'
 
 export const getProfile: Handler<
   Env,
@@ -20,6 +22,13 @@ export const getProfile: Handler<
     // eslint-disable-next-line no-var
     var data = await fetchProfile(agent, { user })
   } catch (e) {
+
+    if (e instanceof ClientResponseError) {
+      if (e.error == 'InvalidRequest') {
+        return c.html(<NotFound type='profile' url={c.req.path} />)
+      }
+    }
+
     throw new HTTPException(500, {
       message: `Failed to fetch the profile!\n${e}`,
     })

@@ -6,6 +6,7 @@ import { parseEmbedImages } from '../lib/parseEmbedImages'
 import { is } from '../lib/utils'
 import { AppBskyEmbedVideo } from '@atcute/bluesky'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
+import { NotFound } from '../components/NotFound'
 
 export interface VideoInfo {
   url: URL;
@@ -45,6 +46,10 @@ export const getPost: Handler<
     throw new HTTPException(500, {
       message: `Failed to fetch the post!\n${e}`,
     })
+  }
+
+  if (!Array.isArray(data.posts) || data.posts.length === 0) {
+    return c.html(<NotFound url={c.req.path} type='post' />)
   }
 
   const fetchedPost = data.posts[0]

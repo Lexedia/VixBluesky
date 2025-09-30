@@ -3,6 +3,7 @@ import { Handler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { fetchProfile } from '../lib/fetchProfile'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
+import { ClientResponseError } from '@atcute/client'
 
 export const getProfileData: Handler<
   Env,
@@ -11,7 +12,7 @@ export const getProfileData: Handler<
   const { user } = c.req.param()
 
   if (!isActorIdentifier(user)) {
-    throw new HTTPException(400, { message: 'Invalid user' })
+    return c.json({ message: 'Invalid user' }, 400)
   }
 
   const agent = c.get('Agent')
@@ -19,6 +20,12 @@ export const getProfileData: Handler<
     // eslint-disable-next-line no-var
     var data = await fetchProfile(agent, { user })
   } catch (e) {
+    if (e instanceof ClientResponseError) {
+      if (e.error == 'InvalidRequest') {
+        return c.json({ message: 'Profile not found' }, 404)
+      }
+    }
+
     throw new HTTPException(500, {
       message: `Failed to fetch the profile!\n${e}`,
     })
