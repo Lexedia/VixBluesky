@@ -116,7 +116,8 @@ export const Post = ({
 }: PostProps) => {
   const isAuthor = images === post.author.avatar
   const description = parseEmbedDescription(post)
-  const isVideo = is('app.bsky.embed.video#view', post.embed)
+  const isVideo = is('app.bsky.embed.video#view', post.embed) ||
+    (is('app.bsky.embed.recordWithMedia#view', post.embed) && is('app.bsky.embed.video#view', post.embed.media))
 
   return (
     <Layout url={url}>

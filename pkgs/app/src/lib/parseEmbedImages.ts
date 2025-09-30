@@ -1,4 +1,4 @@
-import { AppBskyFeedDefs, AppBskyEmbedImages } from '@atcute/client/lexicons'
+import { AppBskyEmbedImages, AppBskyFeedDefs } from '@atcute/bluesky'
 import { is } from './utils'
 
 export function parseEmbedImages(

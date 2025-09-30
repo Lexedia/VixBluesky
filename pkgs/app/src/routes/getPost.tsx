@@ -4,6 +4,8 @@ import { fetchPost } from '../lib/fetchPostData'
 import { Post } from '../components/Post'
 import { parseEmbedImages } from '../lib/parseEmbedImages'
 import { is } from '../lib/utils'
+import { AppBskyEmbedVideo } from '@atcute/bluesky'
+import { isActorIdentifier } from '@atcute/lexicons/syntax'
 
 export interface VideoInfo {
   url: URL;
@@ -20,6 +22,13 @@ export const getPost: Handler<
 > = async (c) => {
   // eslint-disable-next-line prefer-const
   let { user, post, index } = c.req.param()
+
+  if (!isActorIdentifier(user)) {
+    throw new HTTPException(400, {
+      message: 'Invalid user',
+    })
+  }
+
   post = post.replaceAll('|', '')
   const isDirect = c.req.query('direct') === 'true'
   const isGalleryView = c.req.query('gallery') === 'true'
@@ -28,7 +37,7 @@ export const getPost: Handler<
   const agent = c.get('Agent')
   try {
     // eslint-disable-next-line no-var
-    var { data } = await fetchPost(agent, {
+    var data = await fetchPost(agent, {
       user,
       post,
     })
@@ -61,16 +70,30 @@ export const getPost: Handler<
 
   const embed = fetchedPost.embed
 
+  let media: AppBskyEmbedVideo.View | null = null
+
+  if ((is('app.bsky.embed.recordWithMedia#view', embed))) {
+    const m = embed.media
+    if (is('app.bsky.embed.video#view', m)) {
+      media = m
+    }
+  }
+
   if (
-    is('app.bsky.embed.video#view', embed)
+    is('app.bsky.embed.video#view', embed) || media !== null
   ) {
+
+
+    const cid = 'cid' in embed! ? embed.cid : media!.cid
+    const ar = 'aspectRatio' in embed! ? embed.aspectRatio : media!.aspectRatio
+
     const url = useVideoApi
-      ? `${c.env.VIXBLUESKY_API_URL}video/720p/${fetchedPost.author.did}/${embed.cid}`
-      : `https://bsky.social/xrpc/com.atproto.sync.getBlob?cid=${embed.cid}&did=${fetchedPost.author.did}`
+      ? `${c.env.VIXBLUESKY_API_URL}video/720p/${fetchedPost.author.did}/${cid}`
+      : `https://bsky.social/xrpc/com.atproto.sync.getBlob?cid=${cid}&did=${fetchedPost.author.did}`
 
     videoMetaData = {
       url: new URL(url),
-      aspectRatio: embed.aspectRatio ?? { height: 0, width: 0 },
+      aspectRatio: ar ?? { height: 0, width: 0 },
     }
   }
 

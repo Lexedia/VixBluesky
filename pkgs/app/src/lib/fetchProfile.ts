@@ -1,9 +1,10 @@
-import { XRPC } from '@atcute/client'
+import { Client, ok } from '@atcute/client'
+import { ActorIdentifier } from '@atcute/lexicons/syntax'
 
 export interface FetchProfileOptions {
-  user: string;
+  user: ActorIdentifier;
 }
 
-export async function fetchProfile(agent: XRPC, { user }: FetchProfileOptions) {
-  return agent.get('app.bsky.actor.getProfile', { params: { actor: user } })
+export async function fetchProfile(agent: Client, { user }: FetchProfileOptions) {
+  return ok(agent.get('app.bsky.actor.getProfile', { params: { actor: user } }))
 }

@@ -1,14 +1,15 @@
+import { ActorIdentifier } from '@atcute/lexicons'
 import { fetchProfile } from './fetchProfile'
-import { XRPC } from '@atcute/client'
+import { Client, ok } from '@atcute/client'
 
 export interface FetchPostOptions {
-  user: string;
+  user: ActorIdentifier;
   post: string;
 }
 
-export async function fetchPost(agent: XRPC, { user, post }: FetchPostOptions) {
-  const { data: userData } = await fetchProfile(agent, { user })
-  return agent.get('app.bsky.feed.getPosts', {
+export async function fetchPost(agent: Client, { user, post }: FetchPostOptions) {
+  const userData = await fetchProfile(agent, { user })
+  return ok(agent.get('app.bsky.feed.getPosts', {
     params: { uris: [ `at://${userData.did}/app.bsky.feed.post/${post}` ] },
-  })
+  }))
 }

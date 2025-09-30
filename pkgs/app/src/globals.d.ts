@@ -1,4 +1,5 @@
-import { XRPC } from '@atcute/client'
+import { Client } from '@atcute/client'
+import { XRPCProcedures, XRPCQueries } from '@atcute/lexicons/ambient'
 import type { KVNamespace } from '@cloudflare/workers-types'
 
 declare global {
@@ -12,7 +13,7 @@ declare global {
       sessions: KVNamespace;
     };
     Variables: {
-      Agent: XRPC;
+      Agent: Client<XRPCQueries, XRPCProcedures>;
     };
   }
 }
