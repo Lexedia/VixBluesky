@@ -1,6 +1,7 @@
 import { Handler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { fetchPost } from '../lib/fetchPostData'
+import { isActorIdentifier } from '@atcute/lexicons/syntax'
 
 export const getPostData: Handler<
   Env,
@@ -8,10 +9,15 @@ export const getPostData: Handler<
   | '/https://bsky.app/profile/:user/post/:post/json'
 > = async (c) => {
   const { user, post } = c.req.param()
+
+  if (!isActorIdentifier(user)) {
+    throw new HTTPException(400, { message: 'Invalid user' })
+  }
+
   const agent = c.get('Agent')
   try {
     // eslint-disable-next-line no-var
-    var { data } = await fetchPost(agent, {
+    var data = await fetchPost(agent, {
       user,
       post,
     })
