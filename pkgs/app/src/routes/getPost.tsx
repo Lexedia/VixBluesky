@@ -102,16 +102,23 @@ export const getPost: Handler<
     }
   }
 
+  let url = c.req.path
+
+  if (index) {
+    url = url.replace(`/${index}`, '')
+  }
+
   if (!isDirect) {
     return c.html(
       <Post
         post={fetchedPost}
-        url={c.req.path}
+        url={url}
         appDomain={c.env.VIXBLUESKY_APP_DOMAIN}
         videoMetadata={videoMetaData}
         apiUrl={c.env.VIXBLUESKY_API_URL}
         images={imgs}
-        index={index ? +index : undefined}
+        // @ts-expect-error: Bad typings
+        index={!isNaN(index) ? +index : undefined}
       />,
     )
   }

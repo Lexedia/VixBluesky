@@ -1,6 +1,6 @@
 import { Layout } from './Layout'
 import { OEmbedTypes } from '../routes/getOEmbed'
-import { AppBskyActorDefs } from '@atcute/client/lexicons'
+import { AppBskyActorDefs } from '@atcute/bluesky'
 
 interface ProfileProps {
   profile: AppBskyActorDefs.ProfileViewDetailed;
