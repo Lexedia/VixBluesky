@@ -13,6 +13,7 @@ interface PostProps {
   apiUrl: string;
   images: string | AppBskyEmbedImages.ViewImage[];
   index?: number;
+  parentPost?: AppBskyFeedDefs.PostView;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -113,9 +114,10 @@ export const Post = ({
   apiUrl,
   images,
   index,
+  parentPost,
 }: PostProps) => {
   const isAuthor = images === post.author.avatar
-  const description = parseEmbedDescription(post)
+  const description = parseEmbedDescription(post, parentPost)
   const isVideo = is('app.bsky.embed.video#view', post.embed) ||
     (is('app.bsky.embed.recordWithMedia#view', post.embed) && is('app.bsky.embed.video#view', post.embed.media))
 

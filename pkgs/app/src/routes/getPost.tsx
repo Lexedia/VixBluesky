@@ -4,7 +4,7 @@ import { fetchPost } from '../lib/fetchPostData'
 import { Post } from '../components/Post'
 import { parseEmbedImages } from '../lib/parseEmbedImages'
 import { is } from '../lib/utils'
-import { AppBskyEmbedVideo } from '@atcute/bluesky'
+import { AppBskyEmbedVideo, AppBskyFeedDefs } from '@atcute/bluesky'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
 import { NotFound } from '../components/NotFound'
 
@@ -48,13 +48,14 @@ export const getPost: Handler<
     })
   }
 
-  if (!Array.isArray(data.posts) || data.posts.length === 0) {
+  if (!is('app.bsky.feed.defs#threadViewPost', data.thread)) {
     return c.html(<NotFound url={c.req.path} type='post' />)
   }
 
-  const fetchedPost = data.posts[0]
+  const fetchedPost = data.thread.post
+  const parent = is('app.bsky.feed.defs#threadViewPost', data.thread.parent) ? data.thread.parent.post : undefined
 
-  const images = parseEmbedImages(fetchedPost)
+  const images = parseEmbedImages(fetchedPost, parent)
 
   // if the image is already a string, that means it's a user avatar, an external media or an embed thumbnail, there's no need to use the gallery view
   const imgs = isGalleryView
@@ -112,6 +113,7 @@ export const getPost: Handler<
     return c.html(
       <Post
         post={fetchedPost}
+        parentPost={parent}
         url={url}
         appDomain={c.env.VIXBLUESKY_APP_DOMAIN}
         videoMetadata={videoMetaData}
