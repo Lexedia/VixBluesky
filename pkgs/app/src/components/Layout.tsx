@@ -15,11 +15,12 @@ export const Layout = ({ url, children }: LayoutProps) => {
     <html>
       <head>
         <link rel="canonical" href="${redirectUrl}"/>
+        <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
         <meta property="og:url" content="${redirectUrl}"/>
         <meta name="theme-color" content="#0085ff"/>
         <meta property="og:site_name" content="VixBluesky"/>
         ${children}
-        <meta http-equiv="refresh" content="0;url=${redirectUrl}"/>
+        <meta http-equiv="refresh" content="0;url=${redirectUrl}" />
       </head>
     </html>
   `
