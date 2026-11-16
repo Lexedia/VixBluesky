@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{ffi::OsStr, io::Cursor, path::Path};
 
 use image::{
     imageops, imageops::FilterType, DynamicImage, GenericImageView, ImageError, ImageOutputFormat,
@@ -6,7 +6,7 @@ use image::{
 };
 use rayon::prelude::*;
 use thiserror::Error;
-use tokio::{io::AsyncRead, process::Command};
+use tokio::process::Command;
 use tracing::debug;
 
 #[derive(Debug, Error)]
@@ -294,44 +294,56 @@ mod tests {
     }
 }
 
-pub async fn buffer_video(
-    master_url: &str,
-) -> Result<impl AsyncRead + Unpin, Box<dyn std::error::Error>> {
+pub async fn remux_video(playlist_url: &str, out: &Path) -> std::io::Result<()> {
     let start = std::time::Instant::now();
+    let part = out.with_extension(format!("{}.part", std::process::id() ^ rand_suffix()));
 
-    let args = [
-        "-loglevel",
-        "quiet",
-        "-i",
-        &master_url,
-        "-c:v",
-        "copy",
-        "-preset",
-        "ultrafast",
-        "-threads",
-        "0",
-        "-c:a",
-        "aac",
-        "-bsf:a",
-        "aac_adtstoasc",
-        "-movflags",
-        "faststart+frag_keyframe+empty_moov",
-        "-f",
-        "mp4",
-        "pipe:1",
+    let args: [&OsStr; 16] = [
+        "-loglevel".as_ref(),
+        "error".as_ref(),
+        "-i".as_ref(),
+        playlist_url.as_ref(),
+        "-c:v".as_ref(),
+        "copy".as_ref(),
+        "-c:a".as_ref(),
+        "aac".as_ref(),
+        "-bsf:a".as_ref(),
+        "aac_adtstoasc".as_ref(),
+        "-movflags".as_ref(),
+        "+faststart".as_ref(),
+        "-f".as_ref(),
+        "mp4".as_ref(),
+        "-y".as_ref(),
+        part.as_os_str(),
     ];
 
-    debug!("Spawning `ffmpeg {}`", args.join(" "));
+    debug!("Spawning `ffmpeg {:?}`", args);
 
-    let mut process = Command::new("ffmpeg")
-        .args(&args)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
-        .spawn()?;
+    let output = Command::new("ffmpeg")
+        .args(args)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
+        .kill_on_drop(true)
+        .output()
+        .await?;
 
-    let stdout = process.stdout.take().ok_or("Failed to capture stdout")?;
+    if !output.status.success() {
+        let _ = tokio::fs::remove_file(&part).await;
+        return Err(std::io::Error::other(format!(
+            "ffmpeg exited with {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        )));
+    }
 
-    debug!("Spawned `ffmpeg` process in {:?}", start.elapsed());
+    tokio::fs::rename(&part, out).await?;
+    debug!("Remuxed {} in {:?}", playlist_url, start.elapsed());
+    Ok(())
+}
 
-    Ok(stdout)
+fn rand_suffix() -> u32 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0)
 }

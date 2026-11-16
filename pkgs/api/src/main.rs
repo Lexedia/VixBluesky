@@ -6,7 +6,7 @@ use axum::{
     response::{IntoResponse, Redirect},
     routing::get,
     serve, Extension, Router,
-    body::Body,
+    extract::Request,
 };
 use axum_thiserror::ErrorStatus;
 use image::DynamicImage;
@@ -18,13 +18,17 @@ use reqwest::{
 };
 use serde::Deserialize;
 use std::{
+    collections::HashMap,
     fmt::Display,
     net::SocketAddr,
-    time::{Duration, Instant},
+    path::PathBuf,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant, SystemTime},
 };
 use thiserror::Error;
 use tokio::net::TcpListener;
-use tokio_util::io::ReaderStream;
+use tower::ServiceExt;
+use tower_http::services::ServeFile;
 use tracing::{debug, error, info, trace, Level};
 use tower_http;
 
@@ -68,6 +72,29 @@ lazy_static! {
 
         headers
     };
+    static ref VIDEO_CACHE_DIR: PathBuf = std::env::var_os("VIDEO_CACHE_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| std::env::temp_dir().join("bskx-videos"));
+    static ref REMUXING: Mutex<HashMap<PathBuf, Arc<tokio::sync::Mutex<()>>>> = Default::default();
+}
+
+const VIDEO_CACHE_TTL: Duration = Duration::from_secs(6 * 60 * 60);
+
+async fn clean_video_cache() {
+    let Ok(mut dir) = tokio::fs::read_dir(&*VIDEO_CACHE_DIR).await else {
+        return;
+    };
+    while let Ok(Some(entry)) = dir.next_entry().await {
+        let age = entry
+            .metadata()
+            .await
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| SystemTime::now().duration_since(t).ok());
+        if age.is_some_and(|age| age > VIDEO_CACHE_TTL) {
+            let _ = tokio::fs::remove_file(entry.path()).await;
+        }
+    }
 }
 
 #[tokio::main]
@@ -79,6 +106,17 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(Level::INFO)
         .init();
+
+    tokio::fs::create_dir_all(&*VIDEO_CACHE_DIR)
+        .await
+        .expect("VIDEO_CACHE_DIR must be writable");
+    tokio::spawn(async {
+        let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
+        loop {
+            interval.tick().await;
+            clean_video_cache().await;
+        }
+    });
 
     let client = reqwest::ClientBuilder::new()
         .timeout(Duration::from_millis(5000))
@@ -299,9 +337,9 @@ enum BskxVideoError {
     #[status(StatusCode::BAD_GATEWAY)]
     UpstreamError(#[from] reqwest::Error),
 
-    #[error("Failed to buffer video")]
+    #[error("Failed to remux video")]
     #[status(StatusCode::INTERNAL_SERVER_ERROR)]
-    VideoBufferError(#[from] Box<dyn std::error::Error>),
+    VideoBufferError(#[from] std::io::Error),
 }
 
 fn is_quality(quality: &str) -> bool {
@@ -317,12 +355,46 @@ fn is_id(s: &str) -> bool {
 async fn handle_video(
     path: Path<VideoPath>,
     State(state): State<AppState>,
+    request: Request,
 ) -> Result<impl IntoResponse, BskxVideoError> {
     let is_cid = !path.video_id.is_empty() && path.video_id.bytes().all(|b| b.is_ascii_alphanumeric());
     if !path.did.starts_with("did:") || !is_id(&path.did) || !is_cid || !is_quality(&path.quality) {
         return Err(BskxVideoError::InvalidVideoPayload);
     }
 
+    let file = VIDEO_CACHE_DIR.join(format!("{}_{}_{}.mp4", path.did, path.video_id, path.quality));
+
+    if !tokio::fs::try_exists(&file).await.unwrap_or(false) {
+        let lock = REMUXING.lock().unwrap().entry(file.clone()).or_default().clone();
+        let guard = lock.lock().await;
+
+        let result = if tokio::fs::try_exists(&file).await.unwrap_or(false) {
+            Ok(())
+        } else {
+            remux(&state, &path, &file).await
+        };
+
+        drop(guard);
+        let mut remuxing = REMUXING.lock().unwrap();
+        if Arc::strong_count(&lock) == 2 {
+            remuxing.remove(&file);
+        }
+        drop(remuxing);
+        result?;
+    }
+
+    let response = ServeFile::new(&file)
+        .oneshot(request)
+        .await
+        .unwrap_or_else(|e| match e {});
+
+    Ok((
+        [(axum::http::header::CACHE_CONTROL, "public, max-age=604800")],
+        response,
+    ))
+}
+
+async fn remux(state: &AppState, path: &VideoPath, file: &std::path::Path) -> Result<(), BskxVideoError> {
     let url = format!(
         "https://video.bsky.app/watch/{}/{}/{}/video.m3u8",
         path.did, path.video_id, path.quality
@@ -336,28 +408,12 @@ async fn handle_video(
     }
 
     let start = Instant::now();
-
-    let stdout = match processing::buffer_video(&url).await {
-        Ok(stdout) => stdout,
-        Err(e) => {
-            error!("Failed to buffer video: {}", e);
-            return Err(BskxVideoError::VideoBufferError(e));
-        }
-    };
-
-    let stream = ReaderStream::new(stdout);
-    let body = Body::from_stream(stream);
-
-    debug!("Started streaming video in {:?}", start.elapsed());
-
-    Ok((
-        [
-            (axum::http::header::CONTENT_TYPE, "video/mp4"),
-            (axum::http::header::CACHE_CONTROL, "public, max-age=604800"),
-            (axum::http::header::CONNECTION, "keep-alive"),
-        ],
-        body,
-    ))
+    processing::remux_video(&url, file).await.map_err(|e| {
+        error!("Failed to remux video: {}", e);
+        BskxVideoError::VideoBufferError(e)
+    })?;
+    debug!("Remuxed video in {:?}", start.elapsed());
+    Ok(())
 }
 
 #[cfg(test)]

@@ -1,7 +1,9 @@
 import type { KVNamespace } from '@cloudflare/workers-types'
 import type { Flags } from './flags'
 import type { PostMedia } from './normalizePost'
-import { fetchRenditions, pickRendition, type QualityRequest } from './video'
+import {
+  fetchDuration, fetchRenditions, pickBySize, pickRendition, type QualityRequest,
+} from './video'
 
 const CACHE_TTL = 60 * 60 * 24
 
@@ -72,7 +74,7 @@ export interface VideoEnv {
 
 type Video = Extract<PostMedia, { kind: 'video' }>
 
-export async function sourceVideoUrl(video: Video, env: VideoEnv): Promise<string> {
+export async function sourceVideoUrl(video: Pick<Video, 'did' | 'cid'>, env: VideoEnv): Promise<string> {
   const pds = await resolvePds(video.did, env.sessions, env.BSKY_SERVICE_URL)
   const params = new URLSearchParams({ did: video.did, cid: video.cid })
   return `${pds}/xrpc/com.atproto.sync.getBlob?${params}`
@@ -81,11 +83,38 @@ export async function sourceVideoUrl(video: Video, env: VideoEnv): Promise<strin
 export const renditionUrl = (video: Video, quality: string, env: Pick<VideoEnv, 'VIXBLUESKY_API_URL'>) =>
   `${env.VIXBLUESKY_API_URL}video/${quality}/${video.did}/${video.cid}`
 
+async function sourceSize(video: Video, env: VideoEnv): Promise<number | undefined> {
+  try {
+    const res = await fetch(await sourceVideoUrl(video, env), { method: 'HEAD' })
+    const length = Number(res.headers.get('content-length'))
+    return res.ok && length > 0 ? length : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export async function videoUrl(
   video: Video,
-  flags: Pick<Flags, 'videoApi'> & { quality?: QualityRequest },
+  flags: Pick<Flags, 'videoApi'> & {
+    quality?: QualityRequest
+    maxBytes?: number
+    origin?: string
+  },
   env: VideoEnv,
 ): Promise<string> {
+  if (flags.maxBytes !== undefined && !flags.quality) {
+    if (flags.origin) {
+      const size = await sourceSize(video, env)
+      if (size !== undefined && size <= flags.maxBytes)
+        return `${flags.origin}/video/${encodeURIComponent(video.did)}/${video.cid}`
+    }
+    const renditions = await fetchRenditions(video.did, video.cid)
+    if (!renditions.length)
+      return sourceVideoUrl(video, env)
+    const seconds = await fetchDuration(video.did, video.cid, renditions[0].quality)
+    return renditionUrl(video, pickBySize(renditions, seconds, flags.maxBytes)!.quality, env)
+  }
+
   const request = flags.quality ?? (flags.videoApi ? 'best' : 'source')
   if (request === 'source')
     return sourceVideoUrl(video, env)

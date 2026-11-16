@@ -10,7 +10,7 @@ export interface PostProps {
   index?: number;
   videoUrl?: string;
   galleryUrl?: string;
-  stats?: boolean;
+  telegram?: boolean;
 }
 
 const nameOf = (a: PostAuthor) =>
@@ -41,14 +41,20 @@ const oembedHref = (origin: string, type: OEmbedTypes, post: NormalizedPost, des
     description,
   })}`
 
-const Video = ({ url, width, height }: { url: string; width?: number; height?: number }) => {
+const Video = ({
+  url, width, height, player = true,
+}: {
+  url: string; width?: number; height?: number; player?: boolean
+}) => {
   const w = String(width ?? 0)
   const h = String(height ?? 0)
   return (
     <>
       <meta property="twitter:card" content="player" />
-      <meta property="twitter:player" content={url} />
+      {/* Telegram loads a `twitter:player` as an iframe page, which an MP4 isn't; it plays the bare stream */}
+      {player && <meta property="twitter:player" content={url} />}
       <meta property="twitter:player:stream" content={url} />
+      <meta property="twitter:player:stream:content_type" content="video/mp4" />
       <meta property="twitter:player:width" content={w} />
       <meta property="twitter:player:height" content={h} />
       <meta property="og:type" content="video.other" />
@@ -91,10 +97,10 @@ const statsLine = ({ stats }: NormalizedPost) =>
   `🗨️ ${stats.replies}    ♻️ ${stats.reposts}    💙 ${stats.likes}`
 
 export const Post = ({
-  post, url, origin, index, videoUrl, galleryUrl, stats,
+  post, url, origin, index, videoUrl, galleryUrl, telegram,
 }: PostProps) => {
   const description = describe(post)
-  const ogDescription = stats ? [ description, statsLine(post) ].filter(Boolean).join('\n\n') : description
+  const ogDescription = telegram ? [ description, statsLine(post) ].filter(Boolean).join('\n\n') : description
   const title = nameOf(post.author)
   const isVideo = post.media.kind === 'video' && videoUrl !== undefined
   const images = isVideo ? [] : imageUrls(post, index, galleryUrl)
@@ -109,10 +115,14 @@ export const Post = ({
       <meta property="article:published_time" content={post.createdAt} />
 
       {isVideo && post.media.kind === 'video' && (
-        <Video url={videoUrl!} width={post.media.width} height={post.media.height} />
+        <Video url={videoUrl!} width={post.media.width} height={post.media.height} player={!telegram} />
       )}
 
       {images.length !== 0 && <Images urls={images} />}
+
+      {isVideo && post.media.kind === 'video' && post.media.thumb && (
+        <meta property="og:image" content={post.media.thumb} />
+      )}
 
       {images.length === 0 && !isVideo && post.author.avatar && (
         <meta property="og:image" content={post.author.avatar} />

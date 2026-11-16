@@ -56,8 +56,35 @@ export function pickRendition(renditions: Rendition[], request: Exclude<QualityR
   return below.length ? below.at(-1) : renditions[0]
 }
 
+export function parseDuration(text: string): number {
+  let total = 0
+  for (const m of text.matchAll(/^#EXTINF:([\d.]+)/gm))
+    total += Number(m[1])
+  return total
+}
+
+export const estimateBytes = (r: Rendition, seconds: number) =>
+  r.bandwidth !== undefined && seconds > 0 ? (r.bandwidth * seconds) / 8 : undefined
+
+export function pickBySize(renditions: Rendition[], seconds: number, maxBytes: number): Rendition | undefined {
+  const fits = renditions.filter((r) => (estimateBytes(r, seconds) ?? Infinity) <= maxBytes)
+  return fits.at(-1) ?? renditions[0]
+}
+
+const watchUrl = (did: string, cid: string) =>
+  `https://video.bsky.app/watch/${encodeURIComponent(did)}/${encodeURIComponent(cid)}`
+
+export async function fetchDuration(did: string, cid: string, quality: string): Promise<number> {
+  try {
+    const res = await fetch(`${watchUrl(did, cid)}/${quality}/video.m3u8`, { cf: { cacheTtl: 86400, cacheEverything: true } } as RequestInit)
+    return res.ok ? parseDuration(await res.text()) : 0
+  } catch {
+    return 0
+  }
+}
+
 export async function fetchRenditions(did: string, cid: string): Promise<Rendition[]> {
-  const url = `https://video.bsky.app/watch/${encodeURIComponent(did)}/${encodeURIComponent(cid)}/playlist.m3u8`
+  const url = `${watchUrl(did, cid)}/playlist.m3u8`
   try {
     const res = await fetch(url, { cf: { cacheTtl: 86400, cacheEverything: true } } as RequestInit)
     if (!res.ok)

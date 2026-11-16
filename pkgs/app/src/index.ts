@@ -8,6 +8,7 @@ import { getOEmbed } from './routes/getOEmbed'
 import { getProfileData } from './routes/getProfileData'
 import { getProfile } from './routes/getProfile'
 import { getActivityStatus } from './routes/getActivityStatus'
+import { getVideoBlob } from './routes/getVideoBlob'
 import { parseFlags } from './lib/flags'
 import { publicOrigin } from './lib/origin'
 import { HTTPException } from 'hono/http-exception'
@@ -47,7 +48,7 @@ async function isAuthFailure(res: Response): Promise<boolean> {
 }
 
 app.use('*', async (c, next) => {
-  if (NO_AGENT.has(c.req.path))
+  if (NO_AGENT.has(c.req.path) || c.req.path.startsWith('/video/'))
     return next()
 
   const options: PasswordSessionOptions = {
@@ -132,5 +133,7 @@ app.get('/profile/:user/json', getProfileData)
 app.get('/https://bsky.app/profile/:user/json', getProfileData)
 
 app.get('/oembed', getOEmbed)
+
+app.get('/video/:did/:cid', getVideoBlob)
 
 export default app

@@ -13,6 +13,8 @@ import { Activity } from '../components/activity/Activity'
 import { NotFound } from '../components/NotFound'
 import { isDiscord, isTelegram } from '../lib/utils'
 
+const TELEGRAM_MAX_VIDEO_BYTES = 20 * 1000 * 1000
+
 export const getPost: Handler<
   Env,
   | '/profile/:user/post/:post/:index?'
@@ -27,7 +29,10 @@ export const getPost: Handler<
 
   const flags = c.get('Flags')
   const quality = parseQuality(c.req.query('quality'))
-  const videoFlags = { ...flags, quality }
+  const telegram = isTelegram(c.req.header('user-agent'))
+  const videoFlags = {
+    ...flags, quality, maxBytes: telegram ? TELEGRAM_MAX_VIDEO_BYTES : undefined, origin: c.get('Origin'),
+  }
 
   let post
   try {
@@ -90,7 +95,7 @@ export const getPost: Handler<
       index={idx}
       videoUrl={video}
       galleryUrl={gallery}
-      stats={isTelegram(c.req.header('user-agent'))}
+      telegram={telegram}
     />,
   )
 }
