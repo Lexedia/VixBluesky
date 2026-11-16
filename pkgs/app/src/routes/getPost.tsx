@@ -11,8 +11,7 @@ import { ThreadComponents } from '../components/activity/ThreadComponents'
 import { Post } from '../components/Post'
 import { Activity } from '../components/activity/Activity'
 import { NotFound } from '../components/NotFound'
-
-const isDiscord = (ua: string | undefined) => !!ua && /Discordbot/i.test(ua)
+import { isDiscord } from '../lib/utils'
 
 export const getPost: Handler<
   Env,

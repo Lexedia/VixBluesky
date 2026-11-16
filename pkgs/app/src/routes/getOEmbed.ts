@@ -40,9 +40,10 @@ export const getOEmbed: Handler<Env, '/oembed'> = async (c) => {
     })
   }
   if (type === OEmbedTypes.Profile) {
-    const { follows, posts } = c.req.query()
+    const { follows: followers, following, posts } = c.req.query()
+    const counts = [ `${followers} followers`, following && `${following} following`, `${posts} posts` ]
     return c.json({
-      author_name: `👤 ${follows} followers\n🗨️ ${posts} skeets`,
+      author_name: `👥 ${counts.filter(Boolean).join(' · ')}`,
       ...defaults,
     })
   }

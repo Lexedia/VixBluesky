@@ -1,7 +1,9 @@
 import { Handler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { fetchProfile } from '../lib/fetchProfile'
-import { Profile } from '../components/Profile'
+import { Profile, ProfileComponents } from '../components/Profile'
+import { profileComponentEmbed } from '../lib/profileEmbed'
+import { isDiscord } from '../lib/utils'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
 import { ClientResponseError } from '@atcute/client'
 import { NotFound } from '../components/NotFound'
@@ -34,11 +36,13 @@ export const getProfile: Handler<
     })
   }
 
-  return c.html(
-    <Profile
-      profile={data}
-      url={c.req.path}
-      origin={c.get('Origin')}
-    />,
-  )
+  const props = { profile: data, url: c.req.path, origin: c.get('Origin') }
+
+  if (!c.get('Flags').legacy && isDiscord(c.req.header('user-agent'))) {
+    const embed = profileComponentEmbed(data)
+    if (embed)
+      return c.html(<ProfileComponents {...props} embed={embed} />)
+  }
+
+  return c.html(<Profile {...props} />)
 }
