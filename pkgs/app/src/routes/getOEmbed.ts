@@ -5,6 +5,7 @@ export enum OEmbedTypes {
   Post = 1,
   Profile,
   Video,
+  Activity,
 }
 
 export const getOEmbed: Handler<Env, '/oembed'> = async (c) => {
@@ -13,7 +14,7 @@ export const getOEmbed: Handler<Env, '/oembed'> = async (c) => {
 
   const defaults = {
     provider_name: 'VixBluesky',
-    provider_url: 'https://bskx.app/',
+    provider_url: `${c.get('Origin')}/`,
     thumbnail_width: 1000,
     thumbnail_height: 1000,
   }
@@ -21,6 +22,13 @@ export const getOEmbed: Handler<Env, '/oembed'> = async (c) => {
   if (avatar !== undefined) {
     (defaults as typeof defaults & { thumbnail_url?: string }).thumbnail_url =
       decodeURIComponent(avatar)
+  }
+
+  if (type === OEmbedTypes.Activity) {
+    return c.json({
+      provider_name: defaults.provider_name,
+      provider_url: defaults.provider_url,
+    })
   }
 
   if (type === OEmbedTypes.Post) {
@@ -41,7 +49,7 @@ export const getOEmbed: Handler<Env, '/oembed'> = async (c) => {
 
   if (type === OEmbedTypes.Video) {
     const {
-      replies, reposts, likes, description,
+      replies, reposts, likes, description = '',
     } = c.req.query()
     const subStrDesc = ellipsis(description, 256)
 

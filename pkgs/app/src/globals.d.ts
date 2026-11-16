@@ -1,6 +1,6 @@
 import { Client } from '@atcute/client'
-import { XRPCProcedures, XRPCQueries } from '@atcute/lexicons/ambient'
 import type { KVNamespace } from '@cloudflare/workers-types'
+import type { Flags } from './lib/flags'
 
 declare global {
   interface Env {
@@ -10,10 +10,14 @@ declare global {
       BSKY_AUTH_PASSWORD: string;
       VIXBLUESKY_APP_DOMAIN: string;
       VIXBLUESKY_API_URL: string;
+      GALLERY_MAX_IMAGES?: string;
+      GALLERY_FORMAT?: string;
       sessions: KVNamespace;
     };
     Variables: {
-      Agent: Client<XRPCQueries, XRPCProcedures>;
+      Agent: Client;
+      Flags: Flags;
+      Origin: string;
     };
   }
 }

@@ -1,47 +1,105 @@
 import { Hono } from 'hono'
-import { Client, CredentialManager, AtpSessionData } from '@atcute/client'
+import { Client, FetchHandlerObject } from '@atcute/client'
+import { PasswordSession, PasswordSessionData, PasswordSessionOptions } from '@atcute/password-session'
 import { getPost } from './routes/getPost'
 import { getPostData } from './routes/getPostData'
 import { getOEmbed } from './routes/getOEmbed'
 import { getProfileData } from './routes/getProfileData'
 import { getProfile } from './routes/getProfile'
+import { getActivityStatus } from './routes/getActivityStatus'
+import { parseFlags } from './lib/flags'
+import { publicOrigin } from './lib/origin'
 import { HTTPException } from 'hono/http-exception'
 import { name, version } from '../package.json'
 
 const app = new Hono<Env>()
 
+const FLAG_DOMAINS = (appDomain: string) => [ appDomain, 'bskyx.app' ]
+
+const NO_AGENT = new Set([ '/', '/json', '/oembed' ])
+
+const PASSTHROUGH = (appDomain: string) => [ `api.${appDomain}` ]
+
 app.use('*', async (c, next) => {
-  const creds = new CredentialManager({
-    service: c.env.BSKY_SERVICE_URL,
-    onRefresh(session) {
+  if (PASSTHROUGH(c.env.VIXBLUESKY_APP_DOMAIN).includes(new URL(c.req.url).hostname)) {
+    return fetch(c.req.raw)
+  }
+  const url = new URL(c.req.url)
+  const domains = FLAG_DOMAINS(c.env.VIXBLUESKY_APP_DOMAIN)
+  c.set('Flags', parseFlags(url, domains))
+  c.set('Origin', publicOrigin(url, domains))
+  return next()
+})
+
+const AUTH_ERRORS = new Set([ 'InvalidToken', 'ExpiredToken', 'AuthenticationRequired', 'AuthMissing' ])
+async function isAuthFailure(res: Response): Promise<boolean> {
+  if (res.status === 401)
+    return true
+  if (res.status !== 400)
+    return false
+  try {
+    const body = await res.clone().json() as { error?: string }
+    return AUTH_ERRORS.has(body.error ?? '')
+  } catch {
+    return false
+  }
+}
+
+app.use('*', async (c, next) => {
+  if (NO_AGENT.has(c.req.path))
+    return next()
+
+  const options: PasswordSessionOptions = {
+    onUpdate(session) {
       return c.env.sessions.put('session', JSON.stringify(session))
     },
-    onExpired() {
+    onDelete() {
       return c.env.sessions.delete('session')
     },
-    onSessionUpdate(session) {
-      return c.env.sessions.put('session', JSON.stringify(session))
-    },
-  })
-  const agent = new Client({ handler: creds })
+  }
+
+  const login = async () => {
+    const auth = await PasswordSession.login({
+      service: c.env.BSKY_SERVICE_URL,
+      identifier: c.env.BSKY_AUTH_USERNAME,
+      password: c.env.BSKY_AUTH_PASSWORD,
+    }, options)
+    await c.env.sessions.put('session', JSON.stringify(auth.session))
+    return auth
+  }
+
   try {
+    let stored: PasswordSession | undefined
     const rawSession = await c.env.sessions.get('session')
     if (rawSession) {
-      const session = JSON.parse(rawSession) as AtpSessionData
-      await creds.resume(session)
-    } else {
-      await creds.login({
-        identifier: c.env.BSKY_AUTH_USERNAME,
-        password: c.env.BSKY_AUTH_PASSWORD,
-      })
+      const session = JSON.parse(rawSession) as Partial<PasswordSessionData>
+      if (session.accessJwt && session.refreshJwt && session.did) {
+        session.service ??= c.env.BSKY_SERVICE_URL
+        stored = new PasswordSession(session as PasswordSessionData, options)
+      }
     }
-    c.set('Agent', agent)
+
+    if (!stored) {
+      c.set('Agent', new Client({ handler: await login() }))
+    } else {
+      let session = stored
+      const handler: FetchHandlerObject = {
+        async handle(pathname, init) {
+          try {
+            const res = await session.handle(pathname, init)
+            if (!(await isAuthFailure(res)))
+              return res
+          } catch { /* bwahh */ }
+          session = await login()
+          return session.handle(pathname, init)
+        },
+      }
+      c.set('Agent', new Client({ handler }))
+    }
   } catch (error) {
-    const err = new Error('Failed to login to Bluesky!', {
-      cause: error,
-    })
     throw new HTTPException(500, {
-      message: `${err.message} \n\n ${err.cause} \n\n ${err.stack}`,
+      message: 'Failed to login to Bluesky!',
+      cause: error,
     })
   }
   return next()
@@ -53,6 +111,9 @@ app.get('/json', (c) => c.json({
   version,
   repoUrl: 'https://github.com/Lexedia/VixBluesky',
 }))
+
+app.get('/api/v1/statuses/:id', getActivityStatus)
+app.get('/users/:handle/statuses/:id', getActivityStatus)
 
 app.get('/profile/:user/post/:post/json', getPostData)
 app.get('/https://bsky.app/profile/:user/post/:post/json', getPostData)

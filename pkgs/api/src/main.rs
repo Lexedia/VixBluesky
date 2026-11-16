@@ -87,6 +87,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(index_redirect))
+        .route("/healthz", get(|| async { "ok" }))
         .route("/images/:render_type/:did/*image_ids", get(handle_image))
         .route("/video/:quality/:did/:video_id", get(handle_video))
         .layer(tower_http::trace::TraceLayer::new_for_http())
@@ -122,6 +123,10 @@ enum BskxImageError {
     #[status(StatusCode::BAD_REQUEST)]
     NoImagesFound,
 
+    #[error("Too many images, maximum is {}", processing::MAX_IMAGES)]
+    #[status(StatusCode::BAD_REQUEST)]
+    TooManyImages,
+
     #[error("Failed to generate combined thumbnail")]
     #[status(StatusCode::INTERNAL_SERVER_ERROR)]
     ProcessingError(#[from] processing::ProcessingError),
@@ -129,6 +134,7 @@ enum BskxImageError {
 
 #[derive(Deserialize, Debug)]
 struct HandlePath {
+    render_type: String,
     did: String,
     image_ids: String,
 }
@@ -199,6 +205,11 @@ async fn handle_image(
 
     debug!("Image IDs: {}", image_ids.join(", "));
 
+    if image_ids.len() > processing::MAX_IMAGES {
+        return Err(BskxImageError::TooManyImages);
+    }
+
+    let format = processing::OutputFormat::from_render_type(&path.render_type);
     let start = Instant::now();
 
     let tasks: Vec<_> = image_ids
@@ -222,7 +233,7 @@ async fn handle_image(
     let combined_thumbnail_start = Instant::now();
 
     let image = match tokio::task::spawn_blocking(move || {
-        span.in_scope(|| processing::generate_combined_thumbnail(images))
+        span.in_scope(|| processing::generate_combined_thumbnail(images, format))
     })
     .await
     {
@@ -251,7 +262,16 @@ async fn handle_image(
         start.elapsed()
     );
 
-    Ok(([(axum::http::header::CONTENT_TYPE, "image/png")], bytes))
+    Ok((
+        [
+            (axum::http::header::CONTENT_TYPE, format.content_type()),
+            (
+                axum::http::header::CACHE_CONTROL,
+                "public, max-age=604800, immutable",
+            ),
+        ],
+        bytes,
+    ))
 }
 
 async fn index_redirect() -> Redirect {
