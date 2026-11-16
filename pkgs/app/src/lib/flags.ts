@@ -3,6 +3,7 @@ export interface Flags {
   gallery: boolean
   videoApi: boolean
   legacy: boolean
+  thread: boolean
 }
 
 const LETTERS: Record<string, keyof Flags> = {
@@ -10,6 +11,7 @@ const LETTERS: Record<string, keyof Flags> = {
   g: 'gallery',
   v: 'videoApi',
   l: 'legacy',
+  t: 'thread',
 }
 
 const QUERY: Record<string, keyof Flags> = {
@@ -17,6 +19,7 @@ const QUERY: Record<string, keyof Flags> = {
   gallery: 'gallery',
   video_api: 'videoApi',
   legacy: 'legacy',
+  thread: 'thread',
 }
 
 
@@ -26,6 +29,7 @@ export function parseFlags(url: URL, domains: string[]): Flags {
     gallery: false,
     videoApi: false,
     legacy: false,
+    thread: false,
   }
 
   const host = url.hostname.toLowerCase()
@@ -39,8 +43,11 @@ export function parseFlags(url: URL, domains: string[]): Flags {
   }
 
   for (const [ param, flag ] of Object.entries(QUERY)) {
-    if (url.searchParams.get(param) === 'true')
+    const value = url.searchParams.get(param)?.toLowerCase()
+    if (value === 'true' || value === '1')
       flags[flag] = true
+    else if (value === 'false' || value === '0')
+      flags[flag] = false
   }
 
   return flags

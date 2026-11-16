@@ -1,13 +1,12 @@
 import { Handler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { ClientResponseError } from '@atcute/client'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
-import { fetchPost } from '../lib/fetchPostData'
-import { normalizePost } from '../lib/normalizePost'
+import { loadPost } from '../lib/thread'
 import { videoUrl } from '../lib/resolvePds'
 import { galleryUrl } from '../lib/media'
 import { encodeStatusId } from '../lib/statusId'
-import { is } from '../lib/utils'
+import { threadComponentEmbed } from '../lib/componentEmbed'
+import { ThreadComponents } from '../components/activity/ThreadComponents'
 import { Post } from '../components/Post'
 import { Activity } from '../components/activity/Activity'
 import { NotFound } from '../components/NotFound'
@@ -28,26 +27,20 @@ export const getPost: Handler<
 
   const flags = c.get('Flags')
 
-  let data
+  let post
   try {
-    data = await fetchPost(c.get('Agent'), { user, post: rkey, minimal: true })
+    post = await loadPost(c.get('Agent'), { user, post: rkey }, { reader: flags.thread })
   } catch (e) {
-    if (e instanceof ClientResponseError && e.error === 'InvalidRequest') {
-      return c.html(<NotFound url={c.req.path} type='post' />)
-    }
     throw new HTTPException(500, { message: `Failed to fetch the post!\n${e}` })
   }
 
-  if (!is('app.bsky.feed.defs#threadViewPost', data.thread)) {
+  if (!post) {
     return c.html(<NotFound url={c.req.path} type='post' />)
   }
 
-  const parent = is('app.bsky.feed.defs#threadViewPost', data.thread.parent) ? data.thread.parent.post : undefined
-  const post = normalizePost(data.thread.post, parent)
-
   const idx = index !== undefined && /^\d+$/.test(index) ? +index : undefined
   const video = post.media.kind === 'video' ? await videoUrl(post.media, flags, c.env) : undefined
-  const gallery = flags.gallery && post.media.kind === 'images' ? galleryUrl(c.env.VIXBLUESKY_API_URL, post.media.items) : undefined
+  const gallery = flags.gallery && post.media.kind === 'images' ? galleryUrl(c.env, post.media.items) : undefined
 
   if (flags.direct) {
     if (video)
@@ -63,12 +56,25 @@ export const getPost: Handler<
   const url = idx !== undefined ? c.req.path.replace(new RegExp(`/${index}$`), '') : c.req.path
 
   if (!flags.legacy && isDiscord(c.req.header('user-agent'))) {
+    if (post.thread?.parts.length) {
+      const posts = [ post, ...post.thread.parts ]
+      const videoUrls = new Map<string, string>()
+      await Promise.all(posts.map(async (p) => {
+        if (p.media.kind === 'video')
+          videoUrls.set(p.rkey, await videoUrl(p.media, flags, c.env))
+      }))
+      const embed = threadComponentEmbed(post, { videoUrls })
+      if (embed)
+        return c.html(<ThreadComponents post={post} url={url} embed={embed} />)
+    }
+
     const statusId = encodeStatusId({
       author: post.author.did,
       rkey: post.rkey,
       index: idx !== undefined && idx <= 0xFF ? idx : undefined,
       gallery: flags.gallery,
       videoApi: flags.videoApi,
+      thread: flags.thread,
     })
     return c.html(<Activity post={post} url={url} origin={c.get('Origin')} statusId={statusId} />)
   }

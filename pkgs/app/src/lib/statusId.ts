@@ -137,9 +137,13 @@ export interface StatusPayload {
   index?: number
   gallery?: boolean
   videoApi?: boolean
+  thread?: boolean
 }
 
-const VERSION = 0
+
+const V0 = 0
+const V1 = 1
+const X_THREAD = 1 << 0
 const H_RKEY_STR = 1 << 4
 const H_VIDEO_API = 1 << 3
 const H_GALLERY = 1 << 2
@@ -155,15 +159,19 @@ export function encodeStatusId(payload: StatusPayload, alphabet = DIGITS): strin
     throw new Error('Index out of range')
   }
 
+  const ext = payload.thread ? X_THREAD : 0
+
   const w = new ByteWriter()
   w.u8(
-    (VERSION << 5) |
+    ((ext ? V1 : V0) << 5) |
     (isTid ? 0 : H_RKEY_STR) |
     (payload.videoApi ? H_VIDEO_API : 0) |
     (payload.gallery ? H_GALLERY : 0) |
     (hasIndex ? H_INDEX : 0) |
     (isPlc ? H_PLC : 0),
   )
+  if (ext)
+    w.u8(ext)
 
   if (isPlc)
     w.raw(plcToBytes(payload.author))
@@ -185,8 +193,9 @@ export function decodeStatusId(id: string, alphabet = DIGITS): StatusPayload {
   const r = new ByteReader(hashToBytes(id, alphabet))
   const header = r.u8()
   const version = header >> 5
-  if (version !== VERSION)
+  if (version !== V0 && version !== V1)
     throw new Error(`Unsupported id version: ${version}`)
+  const ext = version === V1 ? r.u8() : 0
 
   const author = header & H_PLC ? bytesToPlc(r.raw(15)) : r.str()
   const rkey = header & H_RKEY_STR ? r.str() : bigIntToTid(r.u64be())
@@ -198,6 +207,8 @@ export function decodeStatusId(id: string, alphabet = DIGITS): StatusPayload {
     payload.gallery = true
   if (header & H_VIDEO_API)
     payload.videoApi = true
+  if (ext & X_THREAD)
+    payload.thread = true
 
   if (!r.done())
     throw new Error('Trailing bytes in id')

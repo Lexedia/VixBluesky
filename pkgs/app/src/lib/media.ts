@@ -1,8 +1,16 @@
 import { ImageItem } from './normalizePost'
 
+export interface GalleryEnv {
+  VIXBLUESKY_API_URL: string
+  GALLERY_MAX_IMAGES?: string
+  GALLERY_FORMAT?: string
+}
 
-export const galleryUrl = (apiUrl: string, items: ImageItem[]) =>
-  `${apiUrl}images/png/${items
+export function galleryUrl(env: GalleryEnv, items: ImageItem[]): string {
+  const max = Math.max(1, Number.parseInt(env.GALLERY_MAX_IMAGES ?? '', 10) || 4)
+  const format = env.GALLERY_FORMAT
+  const path = items
+    .slice(0, max)
     .map((img, i) =>
       img.fullsize
         .split('/')
@@ -10,4 +18,6 @@ export const galleryUrl = (apiUrl: string, items: ImageItem[]) =>
         .join('/')
         .replace(/@jpeg$/, ''),
     )
-    .join('/')}`
+    .join('/')
+  return `${env.VIXBLUESKY_API_URL}images/${format}/${path}`
+}

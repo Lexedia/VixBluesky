@@ -1,5 +1,37 @@
-import { AppBskyEmbedRecord, AppBskyEmbedRecordWithMedia, AppBskyFeedDefs } from '@atcute/bluesky'
+import {
+  AppBskyEmbedRecord, AppBskyEmbedRecordWithMedia, AppBskyFeedDefs, AppBskyRichtextFacet,
+} from '@atcute/bluesky'
 import { is } from './utils'
+
+export function facetsOf(facets: AppBskyRichtextFacet.Main[] | undefined): Facet[] | undefined {
+  const out: Facet[] = []
+  for (const f of facets ?? []) {
+    const { byteStart: start, byteEnd: end } = f.index
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start)
+      continue
+    for (const feature of f.features) {
+      if (is('app.bsky.richtext.facet#mention', feature)) {
+        out.push({
+          start, end, kind: 'mention', did: feature.did,
+        })
+        break
+      }
+      if (is('app.bsky.richtext.facet#tag', feature)) {
+        out.push({
+          start, end, kind: 'tag', tag: feature.tag,
+        })
+        break
+      }
+      if (is('app.bsky.richtext.facet#link', feature)) {
+        out.push({
+          start, end, kind: 'link', uri: feature.uri,
+        })
+        break
+      }
+    }
+  }
+  return out.length ? out : undefined
+}
 
 export interface PostAuthor {
   did: string
@@ -31,9 +63,16 @@ export type PostMedia =
   }
   | { kind: 'none' }
 
+export type Facet = { start: number; end: number } & (
+  | { kind: 'mention'; did: string }
+  | { kind: 'tag'; tag: string }
+  | { kind: 'link'; uri: string }
+)
+
 export interface PostRef {
   author: PostAuthor
   text: string
+  facets?: Facet[]
   url: string
 }
 
@@ -51,6 +90,7 @@ export interface NormalizedPost {
   langs: string[]
   author: PostAuthor
   text: string
+  facets?: Facet[]
   reply?: PostRef
   quote?: PostRef
   external?: ExternalCard
@@ -58,6 +98,16 @@ export interface NormalizedPost {
   stats: {
     replies: number; reposts: number; likes: number; quotes: number
   }
+  thread?: ThreadInfo
+}
+
+export interface ThreadInfo {
+  index: number
+  count: number
+  rootUrl: string
+  parts: NormalizedPost[]
+  anchor: number
+  more: boolean
 }
 
 type Embed = AppBskyFeedDefs.PostView['embed']
@@ -164,9 +214,11 @@ function extract(post: AppBskyFeedDefs.PostView): Extracted {
   let quote: PostRef | undefined
   let quoteMedia: PostMedia | null = null
   if (qr) {
+    const value = is('app.bsky.feed.post', qr.value) ? qr.value : undefined
     quote = {
       author: authorOf(qr.author),
-      text: is('app.bsky.feed.post', qr.value) ? qr.value.text : '',
+      text: value?.text ?? '',
+      facets: facetsOf(value?.facets),
       url: postUrl(qr.author.handle, qr.uri),
     }
     for (const e of qr.embeds ?? []) {
@@ -210,6 +262,7 @@ export function normalizePost(
     langs: record?.langs ?? [],
     author: authorOf(post.author),
     text: record?.text ?? '',
+    facets: facetsOf(record?.facets),
     reply,
     quote,
     external,

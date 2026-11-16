@@ -47,5 +47,7 @@ export function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null
 }
 
-export const ellipsis = (s: string, n: number) =>
-  s.length > n ? `${s.slice(0, n - 3)}...` : s
+export function ellipsis(s: string, n: number): string {
+  const chars = Array.from(s)
+  return chars.length > n ? `${chars.slice(0, n - 1).join('').trimEnd()}…` : s
+}

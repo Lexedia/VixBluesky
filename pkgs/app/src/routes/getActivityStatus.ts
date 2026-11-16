@@ -1,14 +1,11 @@
 import { Handler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { ClientResponseError } from '@atcute/client'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
-import { fetchPost } from '../lib/fetchPostData'
-import { normalizePost } from '../lib/normalizePost'
+import { loadPost } from '../lib/thread'
 import { postDataToActivity } from '../lib/postDataToActivity'
 import { videoUrl } from '../lib/resolvePds'
 import { galleryUrl } from '../lib/media'
 import { decodeStatusId, StatusPayload } from '../lib/statusId'
-import { is } from '../lib/utils'
 
 export const getActivityStatus: Handler<
   Env,
@@ -28,28 +25,22 @@ export const getActivityStatus: Handler<
     return c.json({ error: 'Invalid status id' }, 400)
   }
 
-  let data
+  let post
   try {
-    data = await fetchPost(c.get('Agent'), { user: author, post: rkey, minimal: true })
+    post = await loadPost(c.get('Agent'), { user: author, post: rkey }, { reader: !!payload.thread })
   } catch (e) {
-    if (e instanceof ClientResponseError && e.error === 'InvalidRequest') {
-      return c.json({ error: 'Record not found' }, 404)
-    }
     throw new HTTPException(500, { message: `Failed to fetch the post!\n${e}` })
   }
 
-  if (!is('app.bsky.feed.defs#threadViewPost', data.thread)) {
+  if (!post) {
     return c.json({ error: 'Record not found' }, 404)
   }
-
-  const parent = is('app.bsky.feed.defs#threadViewPost', data.thread.parent) ? data.thread.parent.post : undefined
-  const post = normalizePost(data.thread.post, parent)
 
   const video = post.media.kind === 'video'
     ? await videoUrl(post.media, { videoApi: !!payload.videoApi }, c.env)
     : undefined
   const gallery = payload.gallery && post.media.kind === 'images'
-    ? galleryUrl(c.env.VIXBLUESKY_API_URL, post.media.items)
+    ? galleryUrl(c.env, post.media.items)
     : undefined
 
   return c.json(postDataToActivity(post, {
