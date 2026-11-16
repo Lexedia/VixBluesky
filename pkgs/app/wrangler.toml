@@ -13,6 +13,8 @@ routes = [
 BSKY_SERVICE_URL = "https://bsky.social/"
 VIXBLUESKY_APP_DOMAIN = "bskx.app"
 VIXBLUESKY_API_URL = "https://api.bskx.app/"
+GALLERY_MAX_IMAGES = "16"
+GALLERY_FORMAT = "jpeg"
 
 [[kv_namespaces]]
 binding = "sessions"
@@ -30,6 +32,8 @@ routes = []
 BSKY_SERVICE_URL = "https://bsky.social/"
 VIXBLUESKY_APP_DOMAIN = "bskx.app"
 VIXBLUESKY_API_URL = "https://api.bskx.app/"
+GALLERY_MAX_IMAGES = "4"
+GALLERY_FORMAT = "png"
 
 [[env.staging.kv_namespaces]]
 binding = "sessions"

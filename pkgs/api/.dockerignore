@@ -1,0 +1,7 @@
+target/
+deploy/
+.devcontainer/
+.vscode/
+.idea/
+.env
+*.md
