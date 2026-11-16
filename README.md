@@ -17,13 +17,60 @@ Embed Bluesky links in Discord.
 
 #### Simply replace `y` with x in `bsky.app`. (`bsky.app` -> `bskx.app`)
 
-## Direct Links
+### Flags
+Prepend a letter as a subdomain. Combine flags by stacking subdomains in any order, e.g. `r.g.bskx.app` or `g.r.bskx.app`.
 
-You want to link to a media directly? You can prepend `r.` to the URL to get a direct link.
-![Direct Link](./.github/README/raw-media.png)
+| Letter | Effect |
+| ------ | ------ |
+| `r` | Raw media: redirect straight to the media (video first, then images; `/{n}` to choose the index of the image (0-based)) |
+| `g` | Gallery: combine all images into a single image |
+| `v` | Serve videos through the VixBluesky video API (now that custom PDSes are supported, it is mostly irrelevant) |
+| `l` | Legacy embed: OpenGraph/oEmbed tags instead of the rich Discord embed |
+| `t` | Thread reader: the linked post and the ones that follow it in the author's thread (Discord only) |
 
-### Other features
-You can see the wiki [here](https://github.com/Lexedia/VixBluesky/wiki/Features)
+Query parameters work too, and override the subdomain both ways: `?direct=true`, `?gallery=true`, `?video_api=true`, `?legacy=true`, `?thread=true` (or `=false` to switch one off).
+
+### Previews
+
+<details>
+<summary>No flag: the default embed</summary>
+
+`https://bskx.app/profile/nkjrs12.bsky.social/post/3mywz7y4up22x`
+
+<img src="./.github/README/flag-default.png" alt="Default embed in Discord: the post with its thread position (1/2), stats and image" width="460">
+</details>
+
+<details>
+<summary><kbd>t</kbd>: thread reader</summary>
+
+`https://t.bskx.app/profile/nkjrs12.bsky.social/post/3mywz7y4up22x`
+
+<img src="./.github/README/flag-t.png" alt="Thread reader in Discord: both posts of the thread, numbered, each with its own stats, and an Open on Bluesky button" width="460">
+</details>
+
+<details>
+<summary><kbd>l</kbd>: legacy embed</summary>
+
+`https://l.bskx.app/profile/nkjrs12.bsky.social/post/3mywz7y4up22x`
+
+<img src="./.github/README/flag-l.png" alt="Legacy embed in Discord: stats line, author name, thread position and image" width="480">
+</details>
+
+<details>
+<summary><kbd>g</kbd>: gallery</summary>
+
+`https://g.bskx.app/profile/nicholaskole.bsky.social/post/3moxuigdrfc2f`
+
+<img src="./.github/README/flag-g.png" alt="Gallery embed in Discord: ten sketchbook pages combined into a single grid image" width="500">
+</details>
+
+<details>
+<summary><kbd>r</kbd>: raw media</summary>
+
+`https://r.bskx.app/profile/nkjrs12.bsky.social/post/3mywz7y4up22x`
+
+<img src="./.github/README/flag-r.png" alt="Raw media in Discord: just the post's image" width="480">
+</details>
 
 ## For developers
 You can append `/json` at the end of each url to get the raw data VixBluesky receives.

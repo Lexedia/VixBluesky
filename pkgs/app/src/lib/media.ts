@@ -8,7 +8,7 @@ export interface GalleryEnv {
 
 export function galleryUrl(env: GalleryEnv, items: ImageItem[]): string {
   const max = Math.max(1, Number.parseInt(env.GALLERY_MAX_IMAGES ?? '', 10) || 4)
-  const format = env.GALLERY_FORMAT
+  const format = env.GALLERY_FORMAT ?? 'png'
   const path = items
     .slice(0, max)
     .map((img, i) =>

@@ -3,7 +3,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: bskx-api
+    restart: unless-stopped
     ports:
       - "2598:8080"
     environment:
       - PORT=8080
+      - RUST_LOG=${RUST_LOG:-info}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "3"
