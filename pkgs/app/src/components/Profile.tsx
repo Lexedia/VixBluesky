@@ -5,10 +5,10 @@ import { AppBskyActorDefs } from '@atcute/bluesky'
 interface ProfileProps {
   profile: AppBskyActorDefs.ProfileViewDetailed;
   url: string;
-  appDomain: string;
+  origin: string;
 }
 
-export const Profile = ({ profile, url, appDomain }: ProfileProps) => (
+export const Profile = ({ profile, url, origin }: ProfileProps) => (
   <Layout url={url}>
     <meta name="og:type" content="article" />
     <meta name="twitter:creator" content={`@${profile.handle}`} />
@@ -22,7 +22,7 @@ export const Profile = ({ profile, url, appDomain }: ProfileProps) => (
 
     <link
       type="application/json+oembed"
-      href={`https://${appDomain}/oembed?type=${OEmbedTypes.Profile}&follows=${
+      href={`${origin}/oembed?type=${OEmbedTypes.Profile}&follows=${
         profile.followsCount
       }&posts=${profile.postsCount}&avatar=${encodeURIComponent(
         profile.avatar ?? '',

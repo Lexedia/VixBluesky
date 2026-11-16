@@ -1,5 +1,6 @@
 import { $type } from '@atcute/lexicons'
 import { Records } from '@atcute/lexicons/ambient'
+import type { InferInput } from '@atcute/lexicons/validations'
 
 export const concatQueryParams = (params: Record<string, string | string[]>) =>
   Object.entries(params)
@@ -22,7 +23,7 @@ export function is<
 export function is<T extends keyof Records>(
   lexicon: T,
   obj: unknown,
-): obj is Records[T]
+): obj is InferInput<Records[T]>
 export function is<T, Type extends string>(
   lexicon: Type,
   obj: T,

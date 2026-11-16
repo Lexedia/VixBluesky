@@ -5,6 +5,8 @@
     "moduleResolution": "Bundler",
     "esModuleInterop": true,
     "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
     "lib": ["esnext"],
     "types": ["@cloudflare/workers-types", "@atcute/lexicons"],
     "jsx": "react-jsx",

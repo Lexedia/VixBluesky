@@ -1,18 +1,12 @@
 name = "vixbluesky"
 main = "src/index.ts"
-compatibility_date = "2023-01-01"
+compatibility_date = "2026-10-13"
 
 workers_dev = false
 routes = [
     { pattern = "bskyx.app/*", zone_name = "bskyx.app" },
     { pattern = "bskx.app/*", zone_name = "bskx.app" },
-    { pattern = "r.bskx.app/*", zone_name = "bskx.app" },
-    { pattern = "g.r.bskx.app/*", zone_name = "bskx.app" },
-    { pattern = "r.g.bskx.app/*", zone_name = "bskx.app" },
-    { pattern = "g.bskx.app/*", zone_name = "bskx.app" },
-    { pattern = "v.bskx.app/*", zone_name = "bskx.app" },
-    { pattern = "r.v.bskx.app/*", zone_name = "bskx.app" },
-    { pattern = "v.r.bskx.app/*", zone_name = "bskx.app" },
+    { pattern = "*.bskx.app/*", zone_name = "bskx.app" },
 ]
 
 [vars]
@@ -26,4 +20,20 @@ id = "5e180765d24346c9b238be57d9c7001f"
 preview_id = "ee913536e1fb47dcb9fa6275725f5a6f"
 
 [observability.logs]
+enabled = true
+
+[env.staging]
+workers_dev = true
+routes = []
+
+[env.staging.vars]
+BSKY_SERVICE_URL = "https://bsky.social/"
+VIXBLUESKY_APP_DOMAIN = "bskx.app"
+VIXBLUESKY_API_URL = "https://api.bskx.app/"
+
+[[env.staging.kv_namespaces]]
+binding = "sessions"
+id = "ee913536e1fb47dcb9fa6275725f5a6f"
+
+[env.staging.observability.logs]
 enabled = true

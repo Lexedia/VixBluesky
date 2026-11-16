@@ -38,7 +38,7 @@ export const getProfile: Handler<
     <Profile
       profile={data}
       url={c.req.path}
-      appDomain={c.env.VIXBLUESKY_APP_DOMAIN}
+      origin={c.get('Origin')}
     />,
   )
 }

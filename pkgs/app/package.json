@@ -4,14 +4,21 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev src/index.ts",
-    "deploy": "wrangler deploy --minify src/index.ts"
+    "deploy": "wrangler deploy --minify src/index.ts --env=\"\"",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test",
+    "deploy:staging": "wrangler deploy --minify src/index.ts --env staging",
+    "tail": "wrangler tail --env=\"\"",
+    "tail:staging": "wrangler tail --env staging"
   },
   "dependencies": {
-    "@atcute/atproto": "^3.1.0",
-    "@atcute/bluesky": "^3.1.4",
-    "@atcute/client": "^4.0.3",
-    "@atcute/lexicons": "^1.1.0",
-    "hono": "^4.8.4"
+    "@atcute/atproto": "^4.0.4",
+    "@atcute/bluesky": "^4.0.26",
+    "@atcute/client": "^5.1.2",
+    "@atcute/lexicons": "^2.1.1",
+    "@atcute/password-session": "^1.0.2",
+    "hono": "^4.13.18"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250712.0",
@@ -21,6 +28,7 @@
     "prettier": "^3.6.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.36.0",
+    "vitest": "^5.1.0",
     "wrangler": "^4.24.3"
   }
 }
