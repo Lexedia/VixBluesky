@@ -53,3 +53,5 @@ export function ellipsis(s: string, n: number): string {
 }
 
 export const isDiscord = (ua: string | undefined) => !!ua && /Discordbot/i.test(ua)
+
+export const isTelegram = (ua: string | undefined) => !!ua && /TelegramBot/i.test(ua)

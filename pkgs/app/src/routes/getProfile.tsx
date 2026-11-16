@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { fetchProfile } from '../lib/fetchProfile'
 import { Profile, ProfileComponents } from '../components/Profile'
 import { profileComponentEmbed } from '../lib/profileEmbed'
-import { isDiscord } from '../lib/utils'
+import { isDiscord, isTelegram } from '../lib/utils'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
 import { ClientResponseError } from '@atcute/client'
 import { NotFound } from '../components/NotFound'
@@ -44,5 +44,5 @@ export const getProfile: Handler<
       return c.html(<ProfileComponents {...props} embed={embed} />)
   }
 
-  return c.html(<Profile {...props} />)
+  return c.html(<Profile {...props} stats={isTelegram(c.req.header('user-agent'))} />)
 }

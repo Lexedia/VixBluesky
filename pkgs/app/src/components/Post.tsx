@@ -10,6 +10,7 @@ export interface PostProps {
   index?: number;
   videoUrl?: string;
   galleryUrl?: string;
+  stats?: boolean;
 }
 
 const nameOf = (a: PostAuthor) =>
@@ -86,10 +87,14 @@ function imageUrls(post: NormalizedPost, index?: number, gallery?: string): stri
   return []
 }
 
+const statsLine = ({ stats }: NormalizedPost) =>
+  `🗨️ ${stats.replies}    ♻️ ${stats.reposts}    💙 ${stats.likes}`
+
 export const Post = ({
-  post, url, origin, index, videoUrl, galleryUrl,
+  post, url, origin, index, videoUrl, galleryUrl, stats,
 }: PostProps) => {
   const description = describe(post)
+  const ogDescription = stats ? [ description, statsLine(post) ].filter(Boolean).join('\n\n') : description
   const title = nameOf(post.author)
   const isVideo = post.media.kind === 'video' && videoUrl !== undefined
   const images = isVideo ? [] : imageUrls(post, index, galleryUrl)
@@ -97,7 +102,7 @@ export const Post = ({
   return (
     <Layout url={url}>
       <meta name="twitter:creator" content={`@${post.author.handle}`} />
-      <meta property="og:description" content={description} />
+      <meta property="og:description" content={ogDescription} />
       <meta property="og:title" content={title} />
       <meta property="twitter:title" content={title} />
       <meta property="og:updated_time" content={post.createdAt} />

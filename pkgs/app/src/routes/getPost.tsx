@@ -11,7 +11,7 @@ import { ThreadComponents } from '../components/activity/ThreadComponents'
 import { Post } from '../components/Post'
 import { Activity } from '../components/activity/Activity'
 import { NotFound } from '../components/NotFound'
-import { isDiscord } from '../lib/utils'
+import { isDiscord, isTelegram } from '../lib/utils'
 
 export const getPost: Handler<
   Env,
@@ -90,6 +90,7 @@ export const getPost: Handler<
       index={idx}
       videoUrl={video}
       galleryUrl={gallery}
+      stats={isTelegram(c.req.header('user-agent'))}
     />,
   )
 }
