@@ -3,6 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
 import { loadPost } from '../lib/thread'
 import { videoUrl } from '../lib/resolvePds'
+import { parseQuality } from '../lib/video'
 import { galleryUrl } from '../lib/media'
 import { encodeStatusId } from '../lib/statusId'
 import { threadComponentEmbed } from '../lib/componentEmbed'
@@ -26,6 +27,8 @@ export const getPost: Handler<
   }
 
   const flags = c.get('Flags')
+  const quality = parseQuality(c.req.query('quality'))
+  const videoFlags = { ...flags, quality }
 
   let post
   try {
@@ -39,7 +42,7 @@ export const getPost: Handler<
   }
 
   const idx = index !== undefined && /^\d+$/.test(index) ? +index : undefined
-  const video = post.media.kind === 'video' ? await videoUrl(post.media, flags, c.env) : undefined
+  const video = post.media.kind === 'video' ? await videoUrl(post.media, videoFlags, c.env) : undefined
   const gallery = flags.gallery && post.media.kind === 'images' ? galleryUrl(c.env, post.media.items) : undefined
 
   if (flags.direct) {
@@ -61,7 +64,7 @@ export const getPost: Handler<
       const videoUrls = new Map<string, string>()
       await Promise.all(posts.map(async (p) => {
         if (p.media.kind === 'video')
-          videoUrls.set(p.rkey, await videoUrl(p.media, flags, c.env))
+          videoUrls.set(p.rkey, await videoUrl(p.media, videoFlags, c.env))
       }))
       const embed = threadComponentEmbed(post, { videoUrls })
       if (embed)
@@ -75,6 +78,7 @@ export const getPost: Handler<
       gallery: flags.gallery,
       videoApi: flags.videoApi,
       thread: flags.thread,
+      quality,
     })
     return c.html(<Activity post={post} url={url} origin={c.get('Origin')} statusId={statusId} />)
   }
