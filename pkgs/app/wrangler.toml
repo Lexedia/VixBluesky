@@ -20,7 +20,7 @@ id = "5e180765d24346c9b238be57d9c7001f"
 preview_id = "ee913536e1fb47dcb9fa6275725f5a6f"
 
 [observability.logs]
-enabled = true
+enabled = false
 
 [env.staging]
 workers_dev = true
