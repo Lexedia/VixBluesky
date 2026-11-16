@@ -141,10 +141,9 @@ function formatContent(post: NormalizedPost): string {
   const { thread } = post
   const reader = !!thread?.parts.length
 
-  if (thread) {
-    const position = reader ? `${thread.count} posts` : `${thread.index}/${thread.count}`
-    content += `<p>🧵 <a href="${escapeHtml(thread.rootUrl)}">Thread</a> · ${position}</p>`
-  } else if (post.reply) {
+  if (thread && reader) {
+    content += `<p>🧵 <a href="${escapeHtml(thread.rootUrl)}">Thread</a> · ${thread.count} posts</p>`
+  } else if (post.reply && !thread) {
     const { reply } = post
     content += `<p>↪ <i>Replying to <a href="${escapeHtml(reply.url)}">${nameOf(reply.author)}</a></i></p>`
     if (reply.text)

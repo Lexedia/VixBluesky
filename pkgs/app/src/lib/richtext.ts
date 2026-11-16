@@ -27,6 +27,32 @@ export function facetHref(facet: Facet): string | null {
   }
 }
 
+const TRAILING = /[.,;:!?)\]'"]+$/
+
+export function detectFacets(text: string): Facet[] {
+  const enc = new TextEncoder()
+  const bytesBefore = (i: number) => enc.encode(text.slice(0, i)).length
+  const out: Facet[] = []
+  const add = (index: number, match: string, make: (s: string) => object) => {
+    const clean = match.replace(TRAILING, '')
+    if (!clean)
+      return
+    const start = bytesBefore(index)
+    out.push({ start, end: start + enc.encode(clean).length, ...make(clean) } as Facet)
+  }
+
+  for (const m of text.matchAll(/(^|[\s(])(@[a-z0-9-]+(?:\.[a-z0-9-]+)+)/gi))
+    add(m.index! + m[1].length, m[2], (s) => ({ kind: 'mention', did: s.slice(1).toLowerCase() }))
+  for (const m of text.matchAll(/(^|[\s(])((?:https?:\/\/)?(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s]*)?)/gi)) {
+    const uri = /^https?:\/\//i.test(m[2]) ? m[2].replace(TRAILING, '') : `https://${m[2].replace(TRAILING, '')}`
+    add(m.index! + m[1].length, m[2], () => ({ kind: 'link', uri }))
+  }
+  for (const m of text.matchAll(/(^|\s)(#[^\s#]*[^\d\s#][^\s#]*)/g))
+    add(m.index! + m[1].length, m[2], (s) => ({ kind: 'tag', tag: s.slice(1) }))
+
+  return out.sort((a, b) => a.start - b.start)
+}
+
 const sameUrl = (a: string, b: string) => {
   try {
     return new URL(a).href.replace(/\/$/, '') === new URL(b).href.replace(/\/$/, '')
@@ -97,11 +123,22 @@ const escapeBlock = (s: string) => s.replace(/^(\s*)([#>-]|\d+\.)/gm, '$1\\$2')
 export const markdownUrl = (href: string) =>
   href.replace(/[()\s]/g, (ch) => ch === '(' ? '%28' : ch === ')' ? '%29' : encodeURIComponent(ch))
 
+const isHttpUrl = (s: string) => {
+  try {
+    const { protocol } = new URL(s)
+    return protocol === 'https:' || protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
 export function richMarkdown(text: string, facets: Facet[] | undefined): string {
   return escapeBlock(segments(text, facets)
     .map(({ text: t, facet, href }) => {
       if (!facet || !href)
         return escapeInline(t)
+      if (/^https?:\/\/\S+$/i.test(t))
+        return facet.kind === 'link' && isHttpUrl(t) ? t : href
       let url = href
       const handle = /^@([a-z0-9.-]+\.[a-z]{2,})$/i.exec(t)?.[1]
       if (facet.kind === 'mention' && handle)

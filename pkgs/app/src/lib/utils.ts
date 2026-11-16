@@ -51,3 +51,5 @@ export function ellipsis(s: string, n: number): string {
   const chars = Array.from(s)
   return chars.length > n ? `${chars.slice(0, n - 1).join('').trimEnd()}…` : s
 }
+
+export const isDiscord = (ua: string | undefined) => !!ua && /Discordbot/i.test(ua)

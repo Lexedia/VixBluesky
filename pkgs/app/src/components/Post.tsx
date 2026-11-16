@@ -25,9 +25,7 @@ export function describe(post: NormalizedPost): string {
   if (post.external && (post.external.title || post.external.description)) {
     parts.push([ post.external.title, post.external.description ].filter(Boolean).join('\n'))
   }
-  if (post.thread)
-    parts.push(`🧵 Thread ${post.thread.index}/${post.thread.count}`)
-  else if (post.reply)
+  if (post.reply && !post.thread)
     parts.push(`↪ Replying to @${post.reply.author.handle}`)
   return parts.join('\n\n')
 }

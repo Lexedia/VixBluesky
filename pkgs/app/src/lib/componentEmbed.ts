@@ -10,8 +10,8 @@ export const MAX_GALLERY_ITEMS = 10
 const ACCENT = 0x0085FF
 const QUOTE_CHARS = 140
 
-interface Media { url: string }
-type Component =
+export interface Media { url: string }
+export type Component =
   | { type: 1; components: Component[] }
   | {
     type: 2; style: 5; label: string; url: string
@@ -134,7 +134,7 @@ function build(root: NormalizedPost, posts: NormalizedPost[], win: Window, optio
   return { component: { type: 17, accent_color: ACCENT, components } }
 }
 
-const fits = (embed: ComponentEmbed, maxBytes: number) =>
+export const fits = (embed: ComponentEmbed, maxBytes: number = MAX_BYTES) =>
   embedBytes(embed) <= maxBytes && embedComponents(embed) <= MAX_COMPONENTS && embedGalleryItems(embed) <= MAX_GALLERY_ITEMS
 
 export function threadComponentEmbed(root: NormalizedPost, options: ComponentEmbedOptions = {}): ComponentEmbed | null {
