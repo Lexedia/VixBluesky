@@ -37,7 +37,7 @@ export const getActivityStatus: Handler<
   }
 
   const video = post.media.kind === 'video'
-    ? await videoUrl(post.media, { videoApi: !!payload.videoApi }, c.env)
+    ? await videoUrl(post.media, { videoApi: !!payload.videoApi, quality: payload.quality }, c.env)
     : undefined
   const gallery = payload.gallery && post.media.kind === 'images'
     ? galleryUrl(c.env, post.media.items)

@@ -3,6 +3,7 @@ import { Client, FetchHandlerObject } from '@atcute/client'
 import { PasswordSession, PasswordSessionData, PasswordSessionOptions } from '@atcute/password-session'
 import { getPost } from './routes/getPost'
 import { getPostData } from './routes/getPostData'
+import { getVideoQualities } from './routes/getVideoQualities'
 import { getOEmbed } from './routes/getOEmbed'
 import { getProfileData } from './routes/getProfileData'
 import { getProfile } from './routes/getProfile'
@@ -117,6 +118,9 @@ app.get('/users/:handle/statuses/:id', getActivityStatus)
 
 app.get('/profile/:user/post/:post/json', getPostData)
 app.get('/https://bsky.app/profile/:user/post/:post/json', getPostData)
+
+app.get('/profile/:user/post/:post/qualities', getVideoQualities)
+app.get('/https://bsky.app/profile/:user/post/:post/qualities', getVideoQualities)
 
 app.get('/profile/:user/post/:post/:index?', getPost)
 app.get('/https://bsky.app/profile/:user/post/:post/:index?', getPost)

@@ -1,3 +1,5 @@
+import type { QualityRequest } from './video'
+
 /** Digits only: looks like a Mastodon snowflake id. Safe default for Discord. */
 export const DIGITS = '0123456789'
 /** URL-path-safe base64url alphabet: ~2.4x shorter ids, if the consumer accepts non-numeric ids. */
@@ -138,12 +140,15 @@ export interface StatusPayload {
   gallery?: boolean
   videoApi?: boolean
   thread?: boolean
+  quality?: QualityRequest
 }
 
 
 const V0 = 0
 const V1 = 1
 const X_THREAD = 1 << 0
+const X_QUALITY = 1 << 1
+const Q_CODES: Record<string, number> = { best: 0xFFFF, worst: 0xFFFE, source: 0xFFFD }
 const H_RKEY_STR = 1 << 4
 const H_VIDEO_API = 1 << 3
 const H_GALLERY = 1 << 2
@@ -159,7 +164,14 @@ export function encodeStatusId(payload: StatusPayload, alphabet = DIGITS): strin
     throw new Error('Index out of range')
   }
 
-  const ext = payload.thread ? X_THREAD : 0
+  let quality: number | undefined
+  if (payload.quality !== undefined) {
+    quality = Q_CODES[payload.quality] ?? Number.parseInt(payload.quality, 10)
+    if (!Number.isInteger(quality) || quality <= 0 || quality > 0xFFFF)
+      throw new Error('Invalid quality')
+  }
+
+  const ext = (payload.thread ? X_THREAD : 0) | (quality !== undefined ? X_QUALITY : 0)
 
   const w = new ByteWriter()
   w.u8(
@@ -185,6 +197,8 @@ export function encodeStatusId(payload: StatusPayload, alphabet = DIGITS): strin
 
   if (hasIndex)
     w.u8(payload.index!)
+  if (quality !== undefined)
+    w.u16be(quality)
 
   return bytesToHash(w.bytes(), alphabet)
 }
@@ -209,6 +223,10 @@ export function decodeStatusId(id: string, alphabet = DIGITS): StatusPayload {
     payload.videoApi = true
   if (ext & X_THREAD)
     payload.thread = true
+  if (ext & X_QUALITY) {
+    const q = r.u16be()
+    payload.quality = (Object.keys(Q_CODES).find((k) => Q_CODES[k] === q) as QualityRequest | undefined) ?? `${q}p`
+  }
 
   if (!r.done())
     throw new Error('Trailing bytes in id')

@@ -24,11 +24,23 @@ Prepend a letter as a subdomain. Combine flags by stacking subdomains in any ord
 | ------ | ------ |
 | `r` | Raw media: redirect straight to the media (video first, then images; `/{n}` to choose the index of the image (0-based)) |
 | `g` | Gallery: combine all images into a single image |
-| `v` | Serve videos through the VixBluesky video API (now that custom PDSes are supported, it is mostly irrelevant) |
+| `v` | Serve videos through the VixBluesky video API, in the best quality Bluesky transcoded (same as `?quality=best`) |
 | `l` | Legacy embed: OpenGraph/oEmbed tags instead of the rich Discord embed |
 | `t` | Thread reader: the linked post and the ones that follow it in the author's thread (Discord only) |
 
 Query parameters work too, and override the subdomain both ways: `?direct=true`, `?gallery=true`, `?video_api=true`, `?legacy=true`, `?thread=true` (or `=false` to switch one off).
+
+### Video quality
+By default videos are the original upload. Add `?quality=` to pick one of the versions Bluesky transcoded instead.
+
+| Value | Video |
+| ----- | ----- |
+| `360p`, `720p`, `1080p`, ... | That quality, or the closest one below it if the video doesn't have it |
+| `best` / `worst` | The highest / lowest quality available |
+| `source` | The original upload (the default) |
+
+Which qualities exist depends on the video. Append `/qualities` to a post link to list them, with a direct link to each:
+`https://bskx.app/profile/.../post/.../qualities`
 
 ### Previews
 

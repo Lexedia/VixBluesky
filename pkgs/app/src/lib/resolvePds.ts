@@ -1,6 +1,7 @@
 import type { KVNamespace } from '@cloudflare/workers-types'
 import type { Flags } from './flags'
 import type { PostMedia } from './normalizePost'
+import { fetchRenditions, pickRendition, type QualityRequest } from './video'
 
 const CACHE_TTL = 60 * 60 * 24
 
@@ -69,15 +70,26 @@ export interface VideoEnv {
   VIXBLUESKY_API_URL: string
 }
 
-export async function videoUrl(
-  video: Extract<PostMedia, { kind: 'video' }>,
-  flags: Pick<Flags, 'videoApi'>,
-  env: VideoEnv,
-): Promise<string> {
-  if (flags.videoApi) {
-    return `${env.VIXBLUESKY_API_URL}video/720p/${video.did}/${video.cid}`
-  }
+type Video = Extract<PostMedia, { kind: 'video' }>
+
+export async function sourceVideoUrl(video: Video, env: VideoEnv): Promise<string> {
   const pds = await resolvePds(video.did, env.sessions, env.BSKY_SERVICE_URL)
   const params = new URLSearchParams({ did: video.did, cid: video.cid })
   return `${pds}/xrpc/com.atproto.sync.getBlob?${params}`
+}
+
+export const renditionUrl = (video: Video, quality: string, env: Pick<VideoEnv, 'VIXBLUESKY_API_URL'>) =>
+  `${env.VIXBLUESKY_API_URL}video/${quality}/${video.did}/${video.cid}`
+
+export async function videoUrl(
+  video: Video,
+  flags: Pick<Flags, 'videoApi'> & { quality?: QualityRequest },
+  env: VideoEnv,
+): Promise<string> {
+  const request = flags.quality ?? (flags.videoApi ? 'best' : 'source')
+  if (request === 'source')
+    return sourceVideoUrl(video, env)
+
+  const rendition = pickRendition(await fetchRenditions(video.did, video.cid), request)
+  return rendition ? renditionUrl(video, rendition.quality, env) : sourceVideoUrl(video, env)
 }

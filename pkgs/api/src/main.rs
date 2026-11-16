@@ -291,13 +291,35 @@ enum BskxVideoError {
     #[status(StatusCode::BAD_REQUEST)]
     InvalidVideoPayload,
 
+    #[error("This video has no {0} rendition, see /profile/<user>/post/<post>/qualities on bskx.app")]
+    #[status(StatusCode::NOT_FOUND)]
+    RenditionNotFound(String),
+
+    #[error("Failed to reach Bluesky's video service")]
+    #[status(StatusCode::BAD_GATEWAY)]
+    UpstreamError(#[from] reqwest::Error),
+
     #[error("Failed to buffer video")]
     #[status(StatusCode::INTERNAL_SERVER_ERROR)]
     VideoBufferError(#[from] Box<dyn std::error::Error>),
 }
 
-async fn handle_video(path: Path<VideoPath>) -> Result<impl IntoResponse, BskxVideoError> {
-    if !path.did.starts_with("did") || path.video_id.is_empty() || path.quality.is_empty() {
+fn is_quality(quality: &str) -> bool {
+    quality
+        .strip_suffix('p')
+        .is_some_and(|n| (3..=4).contains(&n.len()) && n.bytes().all(|b| b.is_ascii_digit()))
+}
+
+fn is_id(s: &str) -> bool {
+    !s.is_empty() && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b':' || b == b'.' || b == b'-' || b == b'_')
+}
+
+async fn handle_video(
+    path: Path<VideoPath>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, BskxVideoError> {
+    let is_cid = !path.video_id.is_empty() && path.video_id.bytes().all(|b| b.is_ascii_alphanumeric());
+    if !path.did.starts_with("did:") || !is_id(&path.did) || !is_cid || !is_quality(&path.quality) {
         return Err(BskxVideoError::InvalidVideoPayload);
     }
 
@@ -307,6 +329,11 @@ async fn handle_video(path: Path<VideoPath>) -> Result<impl IntoResponse, BskxVi
     );
 
     debug!("Fetching video from {}", url);
+
+    let status = state.http_client.head(&url).send().await?.status();
+    if status == reqwest::StatusCode::NOT_FOUND {
+        return Err(BskxVideoError::RenditionNotFound(path.quality.clone()));
+    }
 
     let start = Instant::now();
 
@@ -331,4 +358,30 @@ async fn handle_video(path: Path<VideoPath>) -> Result<impl IntoResponse, BskxVi
         ],
         body,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quality_names() {
+        for ok in ["360p", "720p", "1080p", "2160p"] {
+            assert!(is_quality(ok), "{ok}");
+        }
+        for bad in ["", "p", "72p", "720", "720P", "99999p", "../720p", "720p/../x", "best"] {
+            assert!(!is_quality(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn ids() {
+        assert!(is_id("did:plc:2yehul7kewhtyhf3royv4nei"));
+        assert!(is_id("did:web:example.com"));
+        assert!(is_id("bafkreihbbgiqrbsyplhto4buw3otpvi4hkn7ktsbjkyq3zwcxgtlmtbfo4"));
+        assert!(!is_id(""));
+        assert!(!is_id("a/b"));
+        assert!(!is_id("a?b"));
+        assert!(!is_id("a%2Fb"));
+    }
 }
