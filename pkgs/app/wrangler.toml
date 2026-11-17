@@ -5,6 +5,7 @@ compatibility_date = "2026-10-13"
 workers_dev = false
 routes = [
     { pattern = "bskyx.app/*", zone_name = "bskyx.app" },
+    { pattern = "*.bskyx.app/*", zone_name = "bskyx.app" },
     { pattern = "bskx.app/*", zone_name = "bskx.app" },
     { pattern = "*.bskx.app/*", zone_name = "bskx.app" },
 ]

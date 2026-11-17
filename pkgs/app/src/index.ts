@@ -27,6 +27,8 @@ app.use('*', async (c, next) => {
     return fetch(c.req.raw)
   }
   const url = new URL(c.req.url)
+  if (url.hostname === 'api.bskyx.app')
+    return c.redirect(`https://api.${c.env.VIXBLUESKY_APP_DOMAIN}${url.pathname}${url.search}`, 301)
   const domains = FLAG_DOMAINS(c.env.VIXBLUESKY_APP_DOMAIN)
   c.set('Flags', parseFlags(url, domains))
   c.set('Origin', publicOrigin(url, domains))

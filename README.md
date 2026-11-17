@@ -3,8 +3,7 @@
 Embed Bluesky links in Discord.
 
 > [!IMPORTANT]
-> If you are still using the old domain (`bskyx.app`) you should consider switching to `bskx.app` since `bskyx.app` only supports Raw Media access.
-> I do not plan to backports other features to this domain.
+> The old domain (`bskyx.app`) still works, flags included (`r.bskyx.app`, `g.bskyx.app`, ...), however, flag stacking (`r.g.bskyx.app` doesn't and will not be supported), please use `bskx.app` from now on.
 
 ## Fix embeds with `s/y/x`.
 
