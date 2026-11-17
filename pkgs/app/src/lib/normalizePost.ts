@@ -74,6 +74,7 @@ export interface PostRef {
   text: string
   facets?: Facet[]
   url: string
+  translation?: { from: string; to: string }
 }
 
 export interface ExternalCard {
@@ -99,6 +100,7 @@ export interface NormalizedPost {
     replies: number; reposts: number; likes: number; quotes: number
   }
   thread?: ThreadInfo
+  translation?: { from: string; to: string }
 }
 
 export interface ThreadInfo {

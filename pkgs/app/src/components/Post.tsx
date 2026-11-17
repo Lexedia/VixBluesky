@@ -2,6 +2,7 @@ import { Layout } from './Layout'
 import { OEmbedTypes } from '../routes/getOEmbed'
 import { NormalizedPost, PostAuthor } from '../lib/normalizePost'
 import { indent } from '../lib/utils'
+import { languageName } from '../lib/translate'
 
 export interface PostProps {
   post: NormalizedPost;
@@ -18,10 +19,13 @@ const nameOf = (a: PostAuthor) =>
 
 export function describe(post: NormalizedPost): string {
   const parts: string[] = []
-  if (post.text)
+  if (post.text && post.translation) {
+    parts.push(`🌐 Translated from ${languageName(post.translation.from)}\n${post.text.replace(/^/gm, '> ')}`)
+  } else if (post.text)
     parts.push(post.text)
   if (post.quote) {
-    parts.push(`Quoting ${nameOf(post.quote.author)}\n➥${indent(post.quote.text, 2)}`)
+    const translated = post.quote.translation ? ` (translated from ${languageName(post.quote.translation.from)})` : ''
+    parts.push(`Quoting ${nameOf(post.quote.author)}${translated}\n➥${indent(post.quote.text, 2)}`)
   }
   if (post.external && (post.external.title || post.external.description)) {
     parts.push([ post.external.title, post.external.description ].filter(Boolean).join('\n'))
@@ -51,7 +55,6 @@ const Video = ({
   return (
     <>
       <meta property="twitter:card" content="player" />
-      {/* Telegram loads a `twitter:player` as an iframe page, which an MP4 isn't; it plays the bare stream */}
       {player && <meta property="twitter:player" content={url} />}
       <meta property="twitter:player:stream" content={url} />
       <meta property="twitter:player:stream:content_type" content="video/mp4" />

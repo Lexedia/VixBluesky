@@ -21,6 +21,9 @@ binding = "sessions"
 id = "5e180765d24346c9b238be57d9c7001f"
 preview_id = "ee913536e1fb47dcb9fa6275725f5a6f"
 
+[ai]
+binding = "AI"
+
 [observability.logs]
 enabled = false
 
@@ -38,6 +41,9 @@ GALLERY_FORMAT = "png"
 [[env.staging.kv_namespaces]]
 binding = "sessions"
 id = "ee913536e1fb47dcb9fa6275725f5a6f"
+
+[env.staging.ai]
+binding = "AI"
 
 [env.staging.observability.logs]
 enabled = true

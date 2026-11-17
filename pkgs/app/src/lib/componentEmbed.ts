@@ -1,5 +1,6 @@
 import { NormalizedPost, PostAuthor } from './normalizePost'
 import { ellipsis } from './utils'
+import { languageName } from './translate'
 import {
   escapeInline, escapeMarkdown, linksTo, markdownUrl, richMarkdown,
 } from './richtext'
@@ -90,13 +91,15 @@ interface Window {
 function build(root: NormalizedPost, posts: NormalizedPost[], win: Window, options: ComponentEmbedOptions): ComponentEmbed {
   const thread = root.thread!
   const total = thread.count
+  const translation = [ root, ...thread.parts ].map((p) => p.translation ?? p.quote?.translation).find(Boolean)
   const components: Component[] = []
 
   const header: Component = {
     type: 10,
     content: `**${name(root.author)}** · [@${escapeInline(root.author.handle)}](${profileUrl(root.author)})
 ` +
-      `-# 🧵 [Thread](${markdownUrl(thread.rootUrl)}) · ${total} posts`,
+      `-# 🧵 [Thread](${markdownUrl(thread.rootUrl)}) · ${total} posts` +
+      (translation ? ` · 🌐 Translated from ${languageName(translation.from)}` : ''),
   }
   components.push(root.author.avatar
     ? { type: 9, components: [ header ], accessory: { type: 11, media: { url: root.author.avatar } } }

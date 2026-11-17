@@ -123,6 +123,9 @@ app.get('/https://bsky.app/profile/:user/post/:post/json', getPostData)
 app.get('/profile/:user/post/:post/qualities', getVideoQualities)
 app.get('/https://bsky.app/profile/:user/post/:post/qualities', getVideoQualities)
 
+app.get('/profile/:user/post/:post/:index/:lang', getPost)
+app.get('/https://bsky.app/profile/:user/post/:post/:index/:lang', getPost)
+
 app.get('/profile/:user/post/:post/:index?', getPost)
 app.get('/https://bsky.app/profile/:user/post/:post/:index?', getPost)
 

@@ -141,6 +141,7 @@ export interface StatusPayload {
   videoApi?: boolean
   thread?: boolean
   quality?: QualityRequest
+  lang?: string
 }
 
 
@@ -148,6 +149,7 @@ const V0 = 0
 const V1 = 1
 const X_THREAD = 1 << 0
 const X_QUALITY = 1 << 1
+const X_LANG = 1 << 2
 const Q_CODES: Record<string, number> = { best: 0xFFFF, worst: 0xFFFE, source: 0xFFFD }
 const H_RKEY_STR = 1 << 4
 const H_VIDEO_API = 1 << 3
@@ -171,7 +173,7 @@ export function encodeStatusId(payload: StatusPayload, alphabet = DIGITS): strin
       throw new Error('Invalid quality')
   }
 
-  const ext = (payload.thread ? X_THREAD : 0) | (quality !== undefined ? X_QUALITY : 0)
+  const ext = (payload.thread ? X_THREAD : 0) | (quality !== undefined ? X_QUALITY : 0) | (payload.lang ? X_LANG : 0)
 
   const w = new ByteWriter()
   w.u8(
@@ -199,6 +201,8 @@ export function encodeStatusId(payload: StatusPayload, alphabet = DIGITS): strin
     w.u8(payload.index!)
   if (quality !== undefined)
     w.u16be(quality)
+  if (payload.lang)
+    w.str(payload.lang)
 
   return bytesToHash(w.bytes(), alphabet)
 }
@@ -227,6 +231,8 @@ export function decodeStatusId(id: string, alphabet = DIGITS): StatusPayload {
     const q = r.u16be()
     payload.quality = (Object.keys(Q_CODES).find((k) => Q_CODES[k] === q) as QualityRequest | undefined) ?? `${q}p`
   }
+  if (ext & X_LANG)
+    payload.lang = r.str()
 
   if (!r.done())
     throw new Error('Trailing bytes in id')

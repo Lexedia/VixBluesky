@@ -42,6 +42,11 @@ By default videos are the original upload. Add `?quality=` to pick one of the ve
 Which qualities exist depends on the video. Append `/qualities` to a post link to list them, with a direct link to each:
 `https://bskx.app/profile/.../post/.../qualities`
 
+### Translation
+Add a language code at the end of a post link to translate it: `https://bskx.app/profile/.../post/.../en` (or `/fr`, `/ja`, `/pt-BR`, ...). It also works with an image index: `.../post/.../2/en`.
+
+The text of the post, its quoted post, and every post of the thread reader (`t`) are translated, with a "🌐 Translated from ..." line. A post already in that language is left as it is. Translations are machine-made (Cloudflare Workers AI), so they can be rough.
+
 ### Previews
 
 <details>

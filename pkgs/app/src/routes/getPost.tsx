@@ -12,6 +12,7 @@ import { Post } from '../components/Post'
 import { Activity } from '../components/activity/Activity'
 import { NotFound } from '../components/NotFound'
 import { isDiscord, isTelegram } from '../lib/utils'
+import { parseLang, translatePost } from '../lib/translate'
 
 const TELEGRAM_MAX_VIDEO_BYTES = 20 * 1000 * 1000
 
@@ -19,8 +20,13 @@ export const getPost: Handler<
   Env,
   | '/profile/:user/post/:post/:index?'
   | '/https://bsky.app/profile/:user/post/:post/:index?'
+  | '/profile/:user/post/:post/:index/:lang'
+  | '/https://bsky.app/profile/:user/post/:post/:index/:lang'
 > = async (c) => {
-  const { user, index } = c.req.param()
+  const { user } = c.req.param()
+  const segments = [ c.req.param('index'), (c.req.param() as { lang?: string }).lang ].filter((s): s is string => !!s)
+  const index = segments.find((s) => /^\d+$/.test(s))
+  const lang = segments.map(parseLang).find(Boolean)
   const rkey = c.req.param('post').replaceAll('|', '')
 
   if (!isActorIdentifier(user)) {
@@ -34,9 +40,11 @@ export const getPost: Handler<
     ...flags, quality, maxBytes: telegram ? TELEGRAM_MAX_VIDEO_BYTES : undefined, origin: c.get('Origin'),
   }
 
+  const rich = !flags.legacy && isDiscord(c.req.header('user-agent'))
+
   let post
   try {
-    post = await loadPost(c.get('Agent'), { user, post: rkey }, { reader: flags.thread })
+    post = await loadPost(c.get('Agent'), { user, post: rkey }, { reader: flags.thread && rich })
   } catch (e) {
     throw new HTTPException(500, { message: `Failed to fetch the post!\n${e}` })
   }
@@ -44,6 +52,9 @@ export const getPost: Handler<
   if (!post) {
     return c.html(<NotFound url={c.req.path} type='post' />)
   }
+
+  if (lang && c.env.AI)
+    post = await translatePost(post, lang, c.env.AI, { cache: caches.default })
 
   const idx = index !== undefined && /^\d+$/.test(index) ? +index : undefined
   const video = post.media.kind === 'video' ? await videoUrl(post.media, videoFlags, c.env) : undefined
@@ -60,9 +71,9 @@ export const getPost: Handler<
     return c.redirect(fallback ?? post.url)
   }
 
-  const url = idx !== undefined ? c.req.path.replace(new RegExp(`/${index}$`), '') : c.req.path
+  const url = segments.length ? c.req.path.split('/').slice(0, -segments.length).join('/') : c.req.path
 
-  if (!flags.legacy && isDiscord(c.req.header('user-agent'))) {
+  if (rich) {
     if (post.thread?.parts.length) {
       const posts = [ post, ...post.thread.parts ]
       const videoUrls = new Map<string, string>()
@@ -83,6 +94,7 @@ export const getPost: Handler<
       videoApi: flags.videoApi,
       thread: flags.thread,
       quality,
+      lang: post.translation?.to,
     })
     return c.html(<Activity post={post} url={url} origin={c.get('Origin')} statusId={statusId} />)
   }

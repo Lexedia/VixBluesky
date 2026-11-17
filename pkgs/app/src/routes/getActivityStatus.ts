@@ -2,6 +2,7 @@ import { Handler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { isActorIdentifier } from '@atcute/lexicons/syntax'
 import { loadPost } from '../lib/thread'
+import { translatePost } from '../lib/translate'
 import { postDataToActivity } from '../lib/postDataToActivity'
 import { videoUrl } from '../lib/resolvePds'
 import { galleryUrl } from '../lib/media'
@@ -35,6 +36,9 @@ export const getActivityStatus: Handler<
   if (!post) {
     return c.json({ error: 'Record not found' }, 404)
   }
+
+  if (payload.lang && c.env.AI)
+    post = await translatePost(post, payload.lang, c.env.AI, { cache: caches.default })
 
   const video = post.media.kind === 'video'
     ? await videoUrl(post.media, { videoApi: !!payload.videoApi, quality: payload.quality }, c.env)

@@ -1,5 +1,6 @@
 import { NormalizedPost, PostAuthor } from './normalizePost'
 import { ellipsis } from './utils'
+import { languageName } from './translate'
 import {
   escapeHtml, linksTo, paragraphs, richText,
 } from './richtext'
@@ -103,11 +104,15 @@ interface BodyOptions {
   compact?: boolean
 }
 
+const translatedFrom = (lang: string) => `<p>🌐 <i>Translated from ${escapeHtml(languageName(lang))}</i></p>`
+
 function formatBody(post: NormalizedPost, { label, compact = false }: BodyOptions = {}): string {
   let content = ''
 
   const prefix = label ? `<b>${escapeHtml(label)}</b>` : ''
-  if (post.text)
+  if (post.text && post.translation && !label) {
+    content += translatedFrom(post.translation.from) + `<blockquote>${richText(post.text, post.facets)}</blockquote>`
+  } else if (post.text)
     content += `<p>${prefix ? `${prefix} ` : ''}${richText(post.text, post.facets)}</p>`
   else if (prefix)
     content += `<p>${prefix}</p>`
@@ -118,6 +123,7 @@ function formatBody(post: NormalizedPost, { label, compact = false }: BodyOption
       ? paragraphs(ellipsis(quote.text, READER_QUOTE_CHARS))
       : richText(quote.text, quote.facets)
     content += `<blockquote><b><a href="${escapeHtml(quote.url)}">${nameOf(quote.author)}</a></b>` +
+      (quote.translation ? `<br><i>🌐 Translated from ${escapeHtml(languageName(quote.translation.from))}</i>` : '') +
       (text ? `<br>${text}` : '') +
       '</blockquote>'
   }
@@ -168,6 +174,10 @@ function formatContent(post: NormalizedPost): string {
       content += `<p><a href="${escapeHtml(thread.rootUrl)}">… read the full thread</a></p>`
     }
   }
+
+  const readerTranslation = reader && [ post, ...thread!.parts ].map((p) => p.translation ?? p.quote?.translation).find(Boolean)
+  if (readerTranslation)
+    content += translatedFrom(readerTranslation.from)
 
   const { replies, reposts, likes } = post.stats
   content += `<p>🗨️ ${replies}   ♻️ ${reposts}   💙 ${likes}</p>`
@@ -272,7 +282,7 @@ export function postDataToActivity(post: NormalizedPost, options: ActivityOption
     reblog: null,
     in_reply_to_id: null,
     in_reply_to_account_id: null,
-    language: post.langs[0] ?? null,
+    language: post.translation?.to ?? post.langs[0] ?? null,
     content: formatContent(post),
     spoiler_text: '',
     visibility: 'public',
